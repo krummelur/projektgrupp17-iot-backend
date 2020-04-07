@@ -1,0 +1,11 @@
+[package]
+name = "proj17_iot-server"
+version = "0.0.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+rocket = "0.4.4"
+futures = "0.3.4"
+mysql = "*"
+
