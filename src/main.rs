@@ -59,7 +59,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    #[test]
+    fn fail() {
+        assert!(false)
+    }
+    
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
         assert_eq!(block_on(validate_station_id(1))  , Ok("Existing station_id"));
