@@ -59,10 +59,12 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    /*
     #[test]
     fn fail() {
         assert!(false)
     }
+    */
     
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
