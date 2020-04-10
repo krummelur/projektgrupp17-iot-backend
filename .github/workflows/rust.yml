@@ -17,3 +17,12 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: heroku login
+      env: 
+        HEROKU_API_KEY: ${{secrets.HEROKU_AUTH_TOKEN}}
+      run: heroku container:login
+    - name: deploy
+      env:
+        HEROKU_API_KEY: ${{secrets.HEROKU_AUTH_TOKEN}}
+      run: heroku container:push -a staging-iot-backend web
+      run: heroku container:release -a staging-iot-backend web 
