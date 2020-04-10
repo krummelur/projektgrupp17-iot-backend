@@ -29,7 +29,7 @@ fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content
 async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result<(i32, i32), &'static str> {
     match join!(validate_station_id(station), validate_tracker_id(tracker)) {
         (Ok(_), Ok(_))  => return Ok((station, tracker)),
-        (Err(err), _) | (_, Err(err)) => return Err(err),
+        (Err(err), _) | (_, Err(err)) => return Err(err)
     };
 }
 
@@ -60,7 +60,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+    #[test]
+    fn failing_test() {
+        assert!(false)
+    }
+
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
         assert_eq!(block_on(validate_station_id(1))  , Ok("Existing station_id"));
