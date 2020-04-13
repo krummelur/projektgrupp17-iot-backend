@@ -1,10 +1,12 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use] extern crate rocket;
 extern crate futures;
+mod db;
 use futures::join;
 use rocket::response::status;
 use rocket::response::content;
 use futures::executor::block_on;
+
 
 #[get("/")]
 fn default() -> &'static str {
@@ -40,19 +42,25 @@ async fn validate_station_id(station_id: i32) -> Result<&'static str, &'static s
     }
 }
 
-async fn validate_tracker_id(station_id: i32) -> Result<&'static str, &'static str>{
-    match station_id {
+
+async fn validate_tracker_id(tracker_id: i32) -> Result<&'static str, &'static str>{
+    match tracker_id {
         -1 => Err("Incorrect tracker_id"),
         _ => Ok("Existing tracker_id")
     }
 }
 
+
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
  * */ 
 fn main() {
-    rocket::ignite().mount("/", routes![default, register]).launch();
-}
+    match db::get_all_agencies() {
+        Ok(val) => for x in val { println!("{}, {}", x.name, x.orgnr); }
+        Err(_) => ()
+    }
+rocket::ignite().mount("/", routes![default, register]).launch();
+}   
 
 
 //              Tests

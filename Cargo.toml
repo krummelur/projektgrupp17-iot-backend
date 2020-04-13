@@ -9,7 +9,8 @@ edition = "2018"
 [dependencies]
 rocket = "0.4.2"
 futures = "0.3.4"
-mysql = "*"
+mysql = "18.2.0"
+lazy_static = "1.4.0"
 
 [[bin]]
 name = "proj17_iot-server"
