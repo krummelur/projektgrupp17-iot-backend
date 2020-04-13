@@ -21,32 +21,50 @@ fn default() -> &'static str {
 fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content::Json<String>>> {
     match block_on(ftr_register_tracker_location(station_id, tracker_id)) {
         Ok((ok_station, ok_tracker)) => 
-            Some(status::Created(format!("baseurl/trackers/{}", ok_station), 
+            Some(status::Created(format!("/trackers/{}", ok_station), 
             Some(content::Json(format!("{{ 'status': 'registered', 'tracker_id': '{}' }}", ok_tracker))))),
-        Err(_) => None
+        Err(e) => panic!(e)
+    }
+}
+
+#[get("/trackers/<tracker_id>")]
+fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'static str>> {
+    match db::get_tracker_info(tracker_id) {
+        Ok(Some(tr)) => Some(Ok(content::Json(format!("{{ 'id': '{}', 'location':'{}'", tr.id, match tr.location {
+            Some(val) => format!("{}", val),
+            None => format!("null")
+        })))),
+        Ok(None) => None,
+        Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
     }
 }
 
 /// Registers new tracker location to database
 async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result<(i32, i32), &'static str> {
-    match join!(validate_station_id(station), validate_tracker_id(tracker)) {
-        (Ok(_), Ok(_))  => return Ok((station, tracker)),
-        (Err(err), _) | (_, Err(err)) => return Err(err)
+    match join!(validate_receiver_id(station), validate_tracker_id(tracker)) {
+        (Ok(_), Ok(_))  => {println!("It went ok!");},
+        (Err(err), _) | (_, Err(err)) => {println!("it went bad"); return Err(err)}
     };
+    match db::register_tracker_to_tracker(station, tracker) {
+        Ok(_) => Ok((station, tracker)),
+        Err(e) => {println!("{}", e); panic!(e)}
+    }
 }
 
-async fn validate_station_id(station_id: i32) -> Result<&'static str, &'static str>{
-    match station_id {
-        -1 => Err("Incorrect station_id"),
-        _ => Ok("Existing station_id")
+async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
+    match db::receiver_exists(station_id) {
+        Ok(Some(_)) => Ok(()),
+        Ok(None) => Err("No such tracker exists"),
+        Err(e) => Err("Unknown Error when accessing database")
     }
 }
 
 
-async fn validate_tracker_id(tracker_id: i32) -> Result<&'static str, &'static str>{
-    match tracker_id {
-        -1 => Err("Incorrect tracker_id"),
-        _ => Ok("Existing tracker_id")
+async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
+    match db::tracker_exists(tracker_id) {
+        Ok(Some(_)) => Ok(()),
+        Ok(None) => Err("No such tracker exists"),
+        Err(e) => Err("Unknown Error when accessing database")
     }
 }
 
@@ -59,7 +77,7 @@ fn main() {
         Ok(val) => for x in val { println!("{}, {}", x.name, x.orgnr); }
         Err(_) => ()
     }
-rocket::ignite().mount("/", routes![default, register]).launch();
+rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
 }   
 
 
@@ -76,8 +94,8 @@ mod tests {
     
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
-        assert_eq!(block_on(validate_station_id(1))  , Ok("Existing station_id"));
-        match block_on(validate_station_id(-1)) {
+        assert_eq!(block_on(validate_receiver_id(1))  , Ok("Existing station_id"));
+        match block_on(validate_receiver_id(-1)) {
             Ok(_) => assert!(false, "Got Ok() on incorrect station_id"),
             Err(_) => assert!(true)
         };
