@@ -30,7 +30,7 @@ fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content
 #[get("/trackers/<tracker_id>")]
 fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'static str>> {
     match db::get_tracker_info(tracker_id) {
-        Ok(Some(tr)) => Some(Ok(content::Json(format!("{{ 'id': '{}', 'location':'{}'", tr.id, match tr.location {
+        Ok(Some(tr)) => Some(Ok(content::Json(format!("{{ 'id': {}, 'location': {}}}", tr.id, match tr.location {
             Some(val) => format!("{}", val),
             None => format!("null")
         })))),
