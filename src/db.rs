@@ -9,10 +9,13 @@ use std::env;
 lazy_static! { static ref DB: Mutex<Dbconn> = Mutex::new(Dbconn::new()) ;}
 
 struct Dbconn {
-    conn: mysql::PooledConn,
+    conn: mysql::Pool,
 }
 
 impl Dbconn {
+    pub fn get_conn(&self) -> mysql::PooledConn {
+        self.conn.get_conn().unwrap()   
+    } 
     pub fn new() -> Dbconn {
         let user_var = "SQL_USERNAME";
         let pass_var = "SQL_PASSWORD";
@@ -21,13 +24,13 @@ impl Dbconn {
         let url = format!("mysql://{}:{}@eu-cdbr-west-02.cleardb.net/heroku_7625137638b3157", username, password);
         let pool = mysql::Pool::new_manual(1, 1, url).expect("error creating pool");
         Dbconn {
-            conn: pool.get_conn().unwrap()
+            conn: pool
         }
     }
 }
 
 pub fn get_all_agencies() -> mysql::Result<Vec<Agency>> {
-    DB.lock().unwrap().conn.query_map(
+    DB.lock().unwrap().get_conn().query_map(
     "select * from agency",
     |(orgnr, name)| {
         Agency { name, orgnr }
@@ -35,7 +38,7 @@ pub fn get_all_agencies() -> mysql::Result<Vec<Agency>> {
 }
 
 pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), mysql::error::Error> {
-    let receiver_location_res = DB.lock().unwrap().conn.query_first(
+    let receiver_location_res = DB.lock().unwrap().get_conn().query_first(
     format!("select id, location from rfid_receiver where id = {}", receiver));    
     let db_receiver = match receiver_location_res {
         Ok(Some((id, location))) => Receiver{id, location},
@@ -51,7 +54,7 @@ pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), my
         Ok(_) => {tx.commit().expect("Error commiting transacton");},
         _ => {tx.rollback().expect("Error rolling back transaction");}
     };
-    
+
     //dropping the guard releases the resource.
     drop(guard);
     match result {
@@ -61,7 +64,7 @@ pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), my
 }
 
 pub fn get_tracker_info(tracker_id: i32) -> Result<Option<Tracker>, String> {
-    let matches = DB.lock().unwrap().conn.query_map(
+    let matches = DB.lock().unwrap().get_conn().query_map(
     format!("select * from rfid_tracker where id = {}", tracker_id),
     |(id, location)| { 
         Tracker { id, location }
@@ -75,7 +78,7 @@ pub fn get_tracker_info(tracker_id: i32) -> Result<Option<Tracker>, String> {
 }
 
 pub fn receiver_exists(tr_id: i32) ->  mysql::Result<Option<i32>> {
-    DB.lock().unwrap().conn.query_first(
+    DB.lock().unwrap().get_conn().query_first(
     format!("select id from rfid_receiver where id = {}", tr_id))
     /*
     match DB.lock().unwrap().conn.query_first(
@@ -88,7 +91,7 @@ pub fn receiver_exists(tr_id: i32) ->  mysql::Result<Option<i32>> {
 }
 
 pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
-    DB.lock().unwrap().conn.query_first(
+    DB.lock().unwrap().get_conn().query_first(
     format!("select id from rfid_tracker where id = {}", tr_id))
     
 }
