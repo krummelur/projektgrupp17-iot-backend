@@ -1,5 +1,3 @@
-use mysql::Conn;
-use mysql::PooledConn;
 use mysql::TxOpts;
 use mysql::prelude::*;
 use lazy_static::lazy_static;
@@ -45,13 +43,16 @@ pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), my
         Err(e) => {println!("{}", e); return Err(e)}
     };
     
+    //The guard lets us borrow the value for several operations. Like a lock. 
     let mut guard = DB.lock().unwrap(); 
     let mut tx = guard.conn.start_transaction(TxOpts::default()).unwrap();
     let result =  tx.exec_drop("update rfid_tracker set location = ? where id = ?", (db_receiver.location, tracker));
         match result {
-        Ok(_) => {tx.commit();},
-        _ => {tx.rollback();}
-    }
+        Ok(_) => {tx.commit().expect("Error commiting transacton");},
+        _ => {tx.rollback().expect("Error rolling back transaction");}
+    };
+    
+    //dropping the guard releases the resource.
     drop(guard);
     match result {
         Ok(_) => Ok(()),
@@ -108,22 +109,3 @@ pub struct Receiver {
     pub id: i32,
     pub location: i32
 }
-/*
-impl ConvIr<String> for Tracker {
-    fn new(v: Value) -> Result<Tracker> {
-        match v {
-            Value::Bytes(bytes) => match std::str::from_utf8(&*bytes) {
-                Ok(b) => Ok(Tracker { id: format!("{}",b) }),
-                Err(_) => Err(Error::FromValueError(Value::Bytes(bytes))),
-            },
-            v => Err(Error::FromValueError(v)),
-        }
-    }
-    fn commit(self) -> String {
-        self.id 
-    }
-    fn rollback(self) -> Value {
-        Value::Bytes(self.id.into_bytes())
-    }
-}
-*/

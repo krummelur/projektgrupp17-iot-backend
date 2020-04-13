@@ -55,19 +55,17 @@ async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
     match db::receiver_exists(station_id) {
         Ok(Some(_)) => Ok(()),
         Ok(None) => Err("No such tracker exists"),
-        Err(e) => Err("Unknown Error when accessing database")
+        Err(e) => {println!("{}",e); Err("Unknown Error when accessing database")}
     }
 }
-
 
 async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
     match db::tracker_exists(tracker_id) {
         Ok(Some(_)) => Ok(()),
         Ok(None) => Err("No such tracker exists"),
-        Err(e) => Err("Unknown Error when accessing database")
+        Err(e) => {println!("{}",e); Err("Unknown Error when accessing database")}
     }
 }
-
 
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
@@ -79,7 +77,6 @@ fn main() {
     }
 rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
 }   
-
 
 //              Tests
 #[cfg(test)]
@@ -94,16 +91,17 @@ mod tests {
     
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
-        assert_eq!(block_on(validate_receiver_id(1))  , Ok("Existing station_id"));
+        assert_eq!(block_on(validate_receiver_id(1))  , Ok(()));
         match block_on(validate_receiver_id(-1)) {
             Ok(_) => assert!(false, "Got Ok() on incorrect station_id"),
             Err(_) => assert!(true)
         };
         Ok(())
     }
+
      #[test]
     fn test_validate_tracker_id() -> Result<(), String> {
-        assert_eq!(block_on(validate_tracker_id(1)), Ok("Existing tracker_id"), "Incorrect value on valid tracker_id");
+        assert_eq!(block_on(validate_tracker_id(1)), Ok(()), "Incorrect value on valid tracker_id");
         match block_on(validate_tracker_id(-1)) {
             Ok(_) => assert!(false, "Got Ok() on incorrect tracker_id"),
             Err(_) => assert!(true, "Got error on incorrect tracker_id")
