@@ -16,7 +16,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
+      run: cargo test --verbose
     env:
       SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
       SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
-      run: cargo test --verbose
