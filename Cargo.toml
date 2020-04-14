@@ -15,7 +15,7 @@ mysql_common = "*"
 lazy_static = "1.4.0"
 colour = "*"
 reduce = "*"
-
+exitcode = "1.1.2"
 [[bin]]
 name = "proj17_iot-server"
 path = "src/main.rs"

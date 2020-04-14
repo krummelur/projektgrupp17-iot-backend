@@ -5,8 +5,6 @@ use mysql::TxOpts;
 use mysql::prelude::*;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use std::env;
-use reduce::Reduce;
 use crate::environment;
 
 //singleton reference to the connection.
@@ -110,10 +108,6 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
  * and turns into a reverse sorted tuple of (interest, weight) 
  */
 pub fn get_interests_at_location(location: i32) -> Result<Option<Vec<(i32, i32)>>, String> {
-    //"SELECT interest, weight from rfid_tracker, tracker_interest 
-    //WHERE location = {}
-    //AND tracker = id;"
-        
     match DB.lock().unwrap().get_conn().query_map(
         //Get the aggregate interest for the location, then map into (interest, weight) tuple
         format!("select interest, sum(weight) as weight from rfid_tracker, tracker_interest where 
@@ -126,7 +120,7 @@ pub fn get_interests_at_location(location: i32) -> Result<Option<Vec<(i32, i32)>
             0 => Ok(None),
             _ => Ok(Some(val))
         },
-        Err(e) => Err(String::from("error"))
+        Err(_) => Err(String::from("error"))
     }
 }
 

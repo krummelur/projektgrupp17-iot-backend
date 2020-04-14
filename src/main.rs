@@ -3,6 +3,7 @@
  * Interface layer
  */
 #[macro_use] extern crate rocket;
+#[cfg(test)] mod integration;
 extern crate futures;
 mod db;
 mod environment;
@@ -46,8 +47,10 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'stat
         Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
     }
 }
-
-
+/**
+ * Get the most appropriate video to play on the screen of specified id
+ * Appropriateness depends on the trackers currently registered to the reciver, and their interests
+ */
 #[get("/video/<display_id>")]
 fn get_video(display_id: i32) -> Result<String, status::BadRequest<String>> {
     match video::find_relevant_video(display_id) {
@@ -90,8 +93,20 @@ async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
  *  Program entrypoint, initializes rocket with the public endpoints
  * */ 
 fn main() {
-    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video]).launch();
-}   
+    check_env();
+    rocket().launch();
+}
+
+fn rocket() -> rocket::Rocket {
+    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video])
+}
+
+fn check_env() {
+    match String::from(environment::PRODUCTION_STRING) == environment::get_current_env() {
+        false => colour::yellow!("\n### USING STAGING ENVIRONMENT (not an error) ###\n\n"),
+        true =>  colour::dark_red!("\n### WARNING! USING PRODUCTION ENVIRONMENT ###\n\n")
+    }
+}
 
 /** 
  * Tests
@@ -103,7 +118,6 @@ mod tests {
     /*
     #[test]
     fn fail() { assert!(false)}
-    */
     
     #[test]
     fn test_validate_station_id() -> Result<(), String> {
@@ -124,4 +138,5 @@ mod tests {
         };
         Ok(())
     }    
+    */
 }

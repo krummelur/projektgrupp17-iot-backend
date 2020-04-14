@@ -1,8 +1,11 @@
 use std::env;
-use colour;
 static ENVIRONMENT_VAR:   &'static str = "RUST_IOT_ENVIRONMENT";
-static PRODUCTION_STRING: &'static str =  "PRODUCTION" ;
-static TEST_STRING:       &'static str =  "TEST";
+pub static PRODUCTION_STRING: &'static str =  "PRODUCTION" ;
+pub static TEST_STRING:       &'static str =  "TEST";
+
+pub fn get_current_env() -> String {
+    env::var(ENVIRONMENT_VAR).unwrap_or_else(|_| {println!("environment setting not found, using test environment"); return TEST_STRING.to_owned()})
+}
 
 struct DbVars {
     host_var: &'static str,
@@ -38,15 +41,8 @@ pub struct DbValues {
 }
 
 pub fn db_environment_values() -> DbValues {
-    let cur_env_val = env::var(ENVIRONMENT_VAR).unwrap_or_else(|_| {println!("environment setting not found, using test environment"); return TEST_STRING.to_owned()}); 
-    
+    let cur_env_val = get_current_env();
     let is_production = String::from(PRODUCTION_STRING) == cur_env_val;
-    
-    match is_production {
-        false => colour::yellow!("\n### USING STAGING ENVIRONMENT (not an error) \n\n"),
-        true =>  colour::dark_red!("\n### WARNING! USING PRODUCTION ENVIRONMENT ###\n\n")
-    }
-
     let current_vars = match is_production {
         false => DbVars::new_test(),
         true =>  DbVars::new_prod()
