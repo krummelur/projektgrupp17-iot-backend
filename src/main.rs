@@ -75,8 +75,7 @@ async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
  *  Program entrypoint, initializes rocket with the public endpoints
  * */ 
 fn main() {
-    db::get_all_agencies();
-rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
+    rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
 }   
 
 //              Tests

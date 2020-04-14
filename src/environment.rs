@@ -38,7 +38,6 @@ pub struct DbValues {
 }
 
 pub fn db_environment_values() -> DbValues {
-    //|_| println!("environment setting not found, using test environment", environment_var)
     let cur_env_val = env::var(ENVIRONMENT_VAR).unwrap_or_else(|_| {println!("environment setting not found, using test environment"); return TEST_STRING.to_owned()}); 
     
     let is_production = String::from(PRODUCTION_STRING) == cur_env_val;

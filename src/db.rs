@@ -20,15 +20,6 @@ impl Dbconn {
     } 
     pub fn new() -> Dbconn {
         let environment = environment::db_environment_values();
-        /*let host_var = "SQL_HOST";
-        let db_var = "SQL_DB_NAME";
-        let user_var = "SQL_USERNAME";
-        let pass_var = "SQL_PASSWORD";
-        let username = env::var(user_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", user_var)));
-        let password = env::var(pass_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", pass_var)));
-        let db_host = env::var(host_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", host_var)));
-        let db_name = env::var(db_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", db_var)));
-        */
         let url = format!("mysql://{}:{}@{}/{}", environment.user, environment.pass, environment.host, environment.db_name);
         let pool = mysql::Pool::new_manual(1, 1, url).expect("error creating pool");
         Dbconn {
