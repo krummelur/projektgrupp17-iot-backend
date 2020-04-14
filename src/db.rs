@@ -3,6 +3,8 @@ use mysql::prelude::*;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use std::env;
+use crate::environment;
+
 
 
 //singleton reference to the connection.
@@ -17,11 +19,17 @@ impl Dbconn {
         self.conn.get_conn().unwrap()   
     } 
     pub fn new() -> Dbconn {
+        let environment = environment::db_environment_values();
+        /*let host_var = "SQL_HOST";
+        let db_var = "SQL_DB_NAME";
         let user_var = "SQL_USERNAME";
         let pass_var = "SQL_PASSWORD";
         let username = env::var(user_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", user_var)));
         let password = env::var(pass_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", pass_var)));
-        let url = format!("mysql://{}:{}@eu-cdbr-west-02.cleardb.net/heroku_7625137638b3157", username, password);
+        let db_host = env::var(host_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", host_var)));
+        let db_name = env::var(db_var).unwrap_or_else(|_| panic!(format!("Error reading environment variable {}", db_var)));
+        */
+        let url = format!("mysql://{}:{}@{}/{}", environment.user, environment.pass, environment.host, environment.db_name);
         let pool = mysql::Pool::new_manual(1, 1, url).expect("error creating pool");
         Dbconn {
             conn: pool
@@ -47,7 +55,7 @@ pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), my
     };
     
     //The guard lets us borrow the value for several operations. Like a lock. 
-    let mut guard = DB.lock().unwrap(); 
+    let guard = DB.lock().unwrap(); 
     let mut tx = guard.conn.start_transaction(TxOpts::default()).unwrap();
     let result =  tx.exec_drop("update rfid_tracker set location = ? where id = ?", (db_receiver.location, tracker));
         match result {
@@ -93,7 +101,6 @@ pub fn receiver_exists(tr_id: i32) ->  mysql::Result<Option<i32>> {
 pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
     DB.lock().unwrap().get_conn().query_first(
     format!("select id from rfid_tracker where id = {}", tr_id))
-    
 }
 
 pub struct Agency {
@@ -107,7 +114,7 @@ pub struct Tracker {
     pub location: Option<i32>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Receiver {
     pub id: i32,
     pub location: i32

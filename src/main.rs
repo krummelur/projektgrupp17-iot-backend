@@ -2,6 +2,7 @@
 #[macro_use] extern crate rocket;
 extern crate futures;
 mod db;
+mod environment;
 use futures::join;
 use rocket::response::status;
 use rocket::response::content;
@@ -23,10 +24,12 @@ fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content
         Ok((ok_station, ok_tracker)) => 
             Some(status::Created(format!("/trackers/{}", ok_station), 
             Some(content::Json(format!("{{ 'status': 'registered', 'tracker_id': '{}' }}", ok_tracker))))),
-        Err(e) => panic!(e)
+        Err(e) => {println!("{}",e); None}
     }
 }
-
+/**
+ * Find out what receiver if any a tracker is registered at.
+ */
 #[get("/trackers/<tracker_id>")]
 fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'static str>> {
     match db::get_tracker_info(tracker_id) {
@@ -42,12 +45,13 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'stat
 /// Registers new tracker location to database
 async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result<(i32, i32), &'static str> {
     match join!(validate_receiver_id(station), validate_tracker_id(tracker)) {
-        (Ok(_), Ok(_))  => {println!("It went ok!");},
-        (Err(err), _) | (_, Err(err)) => {println!("it went bad"); return Err(err)}
-    };
-    match db::register_tracker_to_tracker(station, tracker) {
-        Ok(_) => Ok((station, tracker)),
-        Err(e) => {println!("{}", e); panic!(e)}
+        (Ok(_), Ok(_))  => 
+            match db::register_tracker_to_tracker(station, tracker) {
+            Ok(_) => Ok((station, tracker)),
+            Err(e) => {println!("{}", e); panic!(e)}
+        },
+        (Err(err), _) | (_, Err(err)) => 
+            {println!("it went bad"); return Err(err)}
     }
 }
 
@@ -71,10 +75,7 @@ async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
  *  Program entrypoint, initializes rocket with the public endpoints
  * */ 
 fn main() {
-    match db::get_all_agencies() {
-        Ok(val) => for x in val { println!("{}, {}", x.name, x.orgnr); }
-        Err(_) => ()
-    }
+    db::get_all_agencies();
 rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
 }   
 
@@ -82,8 +83,10 @@ rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
 #[cfg(test)]
 mod tests {
     use super::*;
+    
     /*
     #[test]
+
     fn fail() {
         assert!(false)
     }
