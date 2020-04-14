@@ -1,8 +1,12 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+/**
+ * Interface layer
+ */
 #[macro_use] extern crate rocket;
 extern crate futures;
 mod db;
 mod environment;
+mod video;
 use futures::join;
 use rocket::response::status;
 use rocket::response::content;
@@ -27,6 +31,7 @@ fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content
         Err(e) => {println!("{}",e); None}
     }
 }
+
 /**
  * Find out what receiver if any a tracker is registered at.
  */
@@ -39,6 +44,16 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'stat
         })))),
         Ok(None) => None,
         Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
+    }
+}
+
+
+#[get("/video/<display_id>")]
+fn get_video(display_id: i32) -> Result<String, status::BadRequest<String>> {
+    match video::find_relevant_video(display_id) {
+        Err(e) => Err(status::BadRequest(Some(e))),
+        Ok(Some(v)) => Ok(v),
+        Ok(None) => Ok(String::from("No video to play, (no trackers registered)")) 
     }
 }
 
@@ -75,20 +90,19 @@ async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
  *  Program entrypoint, initializes rocket with the public endpoints
  * */ 
 fn main() {
-    rocket::ignite().mount("/", routes![default, register, get_tracker]).launch();
+    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video]).launch();
 }   
 
-//              Tests
+/** 
+ * Tests
+ * */
 #[cfg(test)]
 mod tests {
     use super::*;
     
     /*
     #[test]
-
-    fn fail() {
-        assert!(false)
-    }
+    fn fail() { assert!(false)}
     */
     
     #[test]

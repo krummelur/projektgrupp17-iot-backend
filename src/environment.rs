@@ -41,7 +41,6 @@ pub fn db_environment_values() -> DbValues {
     let cur_env_val = env::var(ENVIRONMENT_VAR).unwrap_or_else(|_| {println!("environment setting not found, using test environment"); return TEST_STRING.to_owned()}); 
     
     let is_production = String::from(PRODUCTION_STRING) == cur_env_val;
-    println!("{}, {}, is equal: {}", String::from(PRODUCTION_STRING), cur_env_val, is_production);
     
     match is_production {
         false => colour::yellow!("\n### USING STAGING ENVIRONMENT (not an error) \n\n"),
