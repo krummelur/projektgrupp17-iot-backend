@@ -47,7 +47,6 @@ fn query_db(query: &'static str) {
     .query_drop(query).unwrap();
 }
 
-
 #[test]
 fn rocket_has_launched() {
     let client = guarded_client();
