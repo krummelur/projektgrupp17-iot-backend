@@ -3,8 +3,6 @@ name: Rust
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -25,6 +23,5 @@ jobs:
       SQL_HOST: ${{ secrets.SQL_HOST }}
       SQL_USERNAME_TEST: ${{ secrets.SQL_USERNAME_TEST }}
       SQL_PASSWORD_TEST: ${{ secrets.SQL_PASSWORD_TEST }}
-      SQL_DB_NAME_TEST: ${{ secrets.SQL_DB_NAME_TEST }}
-      SQL_HOST_TEST: ${{ secrets.SQL_HOST_TEST }}
       SQL_DB_NAME_TEST: iot_project_db
+      SQL_HOST_TEST: ${{ secrets.SQL_HOST_TEST }}
