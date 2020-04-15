@@ -7,10 +7,11 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 use mysql::prelude::*;
 use std::{thread, time};
+use serde_json::Value;
 
 lazy_static! { static ref CONN: Mutex<mysql::Pool> = Mutex::new(connect()) ;}
 
-//Integration tests must run in a single thread. Unit tests may still run in parallel, hence this mutex.
+//Mutex for running parallel tests
 //lazy_static! {static ref test_mutex: Mutex<()> = Mutex::new(());}
 
 fn connect() -> mysql::Pool {
@@ -25,7 +26,7 @@ let ok_env = environment::get_current_env() == environment::TEST_STRING;
     if !ok_env {
         colour::dark_red!("\n### TRYING TO RUN TESTS OUTSIDE TEST ENVIRONMENT ###\n\n");
     }
-    //NEVER! let integration tests run outside test environment!
+    //Never let integration tests run outside test environment!
     assert!(ok_env, "Environment was not set to TEST during test");
     Client::new(rocket()).unwrap()
 }
@@ -37,8 +38,7 @@ fn reset_db() {
     .query_drop(format!(
         r#"{query}"#, query = test_data::CREATE_SQL_STMT 
     )).unwrap();
-    
-    thread::sleep(time::Duration::from_millis(1));
+    thread::sleep(time::Duration::from_millis(5));
 }
 
 fn query_db(query: &'static str) {
@@ -47,6 +47,7 @@ fn query_db(query: &'static str) {
     .query_drop(query).unwrap();
 }
 
+/*TESTS*/
 #[test]
 fn rocket_has_launched() {
     let client = guarded_client();
@@ -70,11 +71,23 @@ fn get_untracked_tracker_info() {
     let client = guarded_client();
     let mut response = client.get("/trackers/1").dispatch();
     assert_eq!(response.status(), Status::from_code(200).unwrap());
-    assert_eq!(response.body_string(), Some("{ \'id\': 1, \'location\': null}".into()));
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["id"], 1, "Id should be 1 when getting tracker 1");
+    assert_eq!(response_json["location"], Value::Null, "Id should be 1 when getting tracker 1");
 }
 
+
 #[test]
-fn register_tracker() {
+fn register_nonexistant_tracker() { 
+    reset_db();
+    let client = guarded_client();
+    let response = client.post("/register/1/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(404).unwrap());
+}
+
+
+#[test]
+fn register_and_get_tracker() {
     reset_db();
     query_db("insert into rfid_tracker (id) values(1);");
     query_db("insert into location (name) values('location1');");
@@ -85,12 +98,115 @@ fn register_tracker() {
     
     let mut response = client.post("/register/1/1").dispatch();
     assert_eq!(response.status(), Status::from_code(201).unwrap());
-    assert_eq!(response.body_string(), Some("{ \'status\': \'registered\', \'tracker_id\': \'1\' }".into()));
+    
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["status"], "registered", "Correct status on register");
+    assert_eq!(response_json["tracker_id"], 1, "Correct status on register");
     
     client.post("/register/100/1").dispatch();
-    let mut response2 = client.get("/trackers/1").dispatch();
-    assert_eq!(response2.status(), Status::from_code(200).unwrap());
-    assert_eq!(response2.body_string(), Some("{ \'id\': 1, \'location\': 2}".into()));
+    let mut response = client.get("/trackers/1").dispatch();
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    
+    assert_eq!(response_json["id"], 1, "Correct id on get registered tracker");
+    assert_eq!(response_json["location"], 2, "Correct location on get registered tracker");
+}
+
+#[test]
+fn unregister_nonexistant_tracker() { 
+    reset_db();
+    let client = guarded_client();
+    let response = client.post("/unregister/1/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(404).unwrap());
 }
 
 
+#[test]
+fn unregister_and_get_tracker() {
+    reset_db();
+    query_db("insert into rfid_tracker (id) values(1);");
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into location (name) values('location2');");
+    query_db("insert into rfid_receiver (id, location) values(1, 1);");
+    query_db("insert into rfid_receiver (id, location) values(100, 2);");
+    let client = guarded_client();
+    
+    client.post("/register/1/1").dispatch();
+    client.post("/register/100/1").dispatch();
+    let mut response = client.post("/unregister/100/1").dispatch();
+    
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["status"], "unregistered", "Correct mesg on unregister");
+    assert_eq!(response_json["tracker_id"], 1, "Correct location on get registered tracker");
+    
+    let mut response = client.get("/trackers/1").dispatch();
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    
+    assert_eq!(response_json["id"], 1, "Correct id on get registered tracker");
+    assert_eq!(response_json["location"], Value::Null, "Correct location on get registered tracker");
+}
+
+#[test]
+fn get_video_for_nonexistant_display() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into display (location) values(1);");
+    let client = guarded_client();
+    
+    let response = client.get("/video/2").dispatch();
+    assert_eq!(response.status(), Status::from_code(404).unwrap());
+}
+
+#[test]
+fn get_video_for_display_at_empty_location() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into display (location) values(1);");
+    let client = guarded_client();
+    
+    let mut response = client.get("/video/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["message"], "no trackers registered to location", "Wrong message on video response");
+    assert_eq!(response_json["video"], Value::Null, "When receiver has no trackers, video should be null");
+}
+
+#[test]
+fn get_video_for_with_trackers() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into location (name) values('location2');");
+    query_db("insert into display (location) values(1);");
+    query_db("insert into interest (name) values('sport');");
+    query_db("insert into interest (name) values('movies');");
+    query_db("insert into rfid_tracker (id) values(1);");
+    query_db("insert into rfid_tracker (id) values(2);");
+    query_db("insert into rfid_receiver (id, location) values(1, 1);");
+    query_db("insert into rfid_receiver (id, location) values(2, 2);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(1, 1, 100);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 1, 10);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 2, 90);");
+    query_db("insert into advertisement_video (url, length_sec, interest) values('https://www.youtube.com/watch?v=oHg5SJYRHA0', 120, 1);");
+    query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
+    
+    let client = guarded_client();
+    client.post("/register/1/1").dispatch();
+    client.post("/register/1/2").dispatch();
+    
+    let mut response = client.get("/video/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["video"]["url"], String::from("https://www.youtube.com/watch?v=oHg5SJYRHA0"));
+    assert_eq!(response_json["video"]["length"], 120);
+    assert_eq!(response_json["message"], Value::String(String::from("video found")));
+
+    client.post("/register/2/1").dispatch();
+    let mut response = client.get("/video/1").dispatch();
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["video"]["url"], String::from("interest2_video"));
+    assert_eq!(response_json["video"]["length"], 10);
+    assert_eq!(response_json["message"], Value::String(String::from("video found")));
+}

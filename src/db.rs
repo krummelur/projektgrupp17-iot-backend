@@ -2,19 +2,15 @@
  * Database layer.
  */
 use mysql::TxOpts;
-use mysql::prelude::*;
+use mysql::prelude::Queryable;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use crate::environment;
+use crate::model::*;
+
 
 //singleton reference to the connection.
 lazy_static! { static ref DB: Mutex<Dbconn> = Mutex::new(Dbconn::new()) ;}
-
-pub struct AdvertVideo {
-    pub interest: i32,
-    pub url: String, 
-    pub length_sec: i32
-}
 
 struct Dbconn {
     conn: mysql::Pool,
@@ -40,6 +36,22 @@ pub fn get_all_agencies() -> mysql::Result<Vec<Agency>> {
     |(orgnr, name)| {
         Agency { name, orgnr }
     })
+}
+
+pub fn unregister_tracker(tracker_id: i32) -> Result<(), mysql::error::Error> { 
+    let guard = DB.lock().unwrap(); 
+    let mut tx = guard.conn.start_transaction(TxOpts::default()).unwrap();
+    //let result =  tx.exec_drop("update rfid_tracker set location = ? where id = ?", (tracker_id, tracker_id));
+    let result = tx.exec_drop("update rfid_tracker set location = null where id = ?", vec![tracker_id]); 
+    match result {
+        Ok(_) => {tx.commit().expect("Error commiting transacton")},
+        _ => {tx.rollback().expect("Error rolling back transaction")}
+    }
+    drop(guard);
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) =>  Err(e)
+    }
 }
 
 pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), mysql::error::Error> {
@@ -82,6 +94,20 @@ pub fn get_tracker_info(tracker_id: i32) -> Result<Option<Tracker>, String> {
     }
 }
 
+pub fn get_receiver_info(receiver_id: i32) -> Result<Option<Receiver>, String> {
+    let matches = DB.lock().unwrap().get_conn().query_map(
+    format!("select * from rfid_receiver where id = {}", receiver_id),
+    |(id, location)| { 
+        Receiver { id, location }
+    }).unwrap();
+
+    match matches.len() {
+        0 => Ok(None),
+        1 => Ok(Some(matches[0])),
+        _ => Err(format!("unexpected result, malformed database or backend bug" ))
+    }
+}
+
 pub fn receiver_exists(tr_id: i32) ->  mysql::Result<Option<i32>> {
     DB.lock().unwrap().get_conn().query_first(
     format!("select id from rfid_receiver where id = {}", tr_id))
@@ -102,6 +128,12 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
         Err(e) => {println!("{}", e); None}
     }
 }
+
+pub fn get_display_by_id(display_id: i32) ->  mysql::Result<Option<i32>> {
+    DB.lock().unwrap().get_conn().query_first(
+    format!("select id from display where id = {}", display_id))
+}
+
 
 /**
  * Returns sums up all the interests for trackers in this location
@@ -153,16 +185,4 @@ pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
 pub struct Agency {
     pub name: String,
     pub orgnr: String
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Tracker {
-    pub id: i32,
-    pub location: Option<i32>
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Receiver {
-    pub id: i32,
-    pub location: i32
 }
