@@ -3,7 +3,7 @@
  * Interface layer
  */
 #[macro_use] extern crate rocket;
-#[cfg(test)] mod integration;
+#[cfg(test)] mod integration_tests;
 extern crate futures;
 mod db;
 mod environment;
@@ -113,9 +113,9 @@ fn check_env() {
  * */
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
     
-    /*
     #[test]
     fn fail() { assert!(false)}
     

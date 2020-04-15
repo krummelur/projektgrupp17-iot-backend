@@ -5,7 +5,7 @@ create table `location` (name varchar(128) NOT NULL ,
 id integer NOT NULL UNIQUE AUTO_INCREMENT ,
  PRIMARY KEY( id));
 create table `rfid_tracker` (id integer NOT NULL UNIQUE ,
-location integer NOT NULL ,
+location integer ,
 FOREIGN KEY (`location`)
 REFERENCES location(id),
  PRIMARY KEY( id));
