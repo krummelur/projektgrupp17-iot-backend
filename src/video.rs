@@ -2,11 +2,13 @@
  * Video business logic layer
 */
 use crate::db;
+use crate::model::*;
 
 /**
  * Returns the url for the most relevant video, or None, if there is no matching video
  */
-pub fn find_relevant_video(display_id: i32) -> Result<Option<String>, String> {
+pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, String> {
+    
     //Find out where the display is located
     let location = match db::get_display_location(display_id) {
         Some(val) => val,
@@ -38,9 +40,10 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<String>, String> {
     
     for x in interests.iter() {
         match videos.iter().find(|el| el.interest == x.0) {
-            Some(val) => return Ok(Some(format!("{}", val.url))),
-            _ => 0
+            Some(val) => return Ok(Some(val.clone())),
+            _ => ()
         };
     }
     Ok(None)
 }
+

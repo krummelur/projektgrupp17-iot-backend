@@ -6,15 +6,11 @@ use mysql::prelude::*;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use crate::environment;
+use crate::model::*;
+
 
 //singleton reference to the connection.
 lazy_static! { static ref DB: Mutex<Dbconn> = Mutex::new(Dbconn::new()) ;}
-
-pub struct AdvertVideo {
-    pub interest: i32,
-    pub url: String, 
-    pub length_sec: i32
-}
 
 struct Dbconn {
     conn: mysql::Pool,
@@ -103,6 +99,12 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
     }
 }
 
+pub fn get_display_by_id(display_id: i32) ->  mysql::Result<Option<i32>> {
+    DB.lock().unwrap().get_conn().query_first(
+    format!("select id from display where id = {}", display_id))
+}
+
+
 /**
  * Returns sums up all the interests for trackers in this location
  * and turns into a reverse sorted tuple of (interest, weight) 
@@ -153,16 +155,4 @@ pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
 pub struct Agency {
     pub name: String,
     pub orgnr: String
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Tracker {
-    pub id: i32,
-    pub location: Option<i32>
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Receiver {
-    pub id: i32,
-    pub location: i32
 }

@@ -7,12 +7,24 @@
 extern crate futures;
 mod db;
 mod environment;
+mod model;
 mod video;
 use futures::join;
 use rocket::response::status;
 use rocket::response::content;
 use futures::executor::block_on;
+use rocket_contrib::json::JsonValue;
+use serde_json::json;
 
+
+
+#[catch(404)]
+fn not_found() -> JsonValue {
+    JsonValue(json!({
+        "status": "error",
+        "reason": "not found"
+    }))
+}
 
 #[get("/")]
 fn default() -> &'static str {
@@ -52,11 +64,16 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'stat
  * Appropriateness depends on the trackers currently registered to the reciver, and their interests
  */
 #[get("/video/<display_id>")]
-fn get_video(display_id: i32) -> Result<String, status::BadRequest<String>> {
+fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<String>>> {
+    match db::get_display_by_id(display_id) {
+        Ok(None) => return Err(None),
+        _ => ()
+    };
+
     match video::find_relevant_video(display_id) {
-        Err(e) => Err(status::BadRequest(Some(e))),
-        Ok(Some(v)) => Ok(v),
-        Ok(None) => Ok(String::from("No video to play, (no trackers registered)")) 
+        Err(e) => Err(Some(status::BadRequest(Some(e)))),
+        Ok(Some(v)) => Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec}, "message": "video found"}))),
+        Ok(None) => Ok(JsonValue(json!({"video": null, "message": "no trackers registered to location" })))
     }
 }
 
@@ -98,7 +115,7 @@ fn main() {
 }
 
 fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video])
+    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video]).register( catchers![not_found])
 }
 
 fn check_env() {
@@ -107,6 +124,7 @@ fn check_env() {
         true =>  colour::dark_red!("\n### WARNING! USING PRODUCTION ENVIRONMENT ###\n\n")
     }
 }
+
 
 /** 
  * Tests

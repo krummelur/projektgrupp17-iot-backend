@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 use mysql::prelude::*;
 use std::{thread, time};
+use serde_json::Value;
 
 lazy_static! { static ref CONN: Mutex<mysql::Pool> = Mutex::new(connect()) ;}
 
@@ -94,4 +95,65 @@ fn register_tracker() {
     assert_eq!(response2.body_string(), Some("{ \'id\': 1, \'location\': 2}".into()));
 }
 
+#[test]
+fn get_video_for_nonexistant_display() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into display (location) values(1);");
+    let client = guarded_client();
+    
+    let response = client.get("/video/2").dispatch();
+    assert_eq!(response.status(), Status::from_code(404).unwrap());
+}
 
+
+#[test]
+fn get_video_for_display_at_empty_location() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into display (location) values(1);");
+    let client = guarded_client();
+    
+    let mut response = client.get("/video/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["message"], Value::String(String::from("no trackers registered to location")), "Wrong message on video response");
+    assert_eq!(response_json["video"], Value::Null, "When receiver has no trackers, video should be null");
+}
+
+#[test]
+fn get_video_for_with_trackers() {
+    reset_db();
+    query_db("insert into location (name) values('location1');");
+    query_db("insert into location (name) values('location2');");
+    query_db("insert into display (location) values(1);");
+    query_db("insert into interest (name) values('sport');");
+    query_db("insert into interest (name) values('movies');");
+    query_db("insert into rfid_tracker (id) values(1);");
+    query_db("insert into rfid_tracker (id) values(2);");
+    query_db("insert into rfid_receiver (id, location) values(1, 1);");
+    query_db("insert into rfid_receiver (id, location) values(2, 2);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(1, 1, 100);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 1, 10);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 2, 90);");
+    query_db("insert into advertisement_video (url, length_sec, interest) values('https://www.youtube.com/watch?v=oHg5SJYRHA0', 120, 1);");
+    query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
+    
+    let client = guarded_client();
+    client.post("/register/1/1").dispatch();
+    client.post("/register/1/2").dispatch();
+    
+    let mut response = client.get("/video/1").dispatch();
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["video"]["url"], String::from("https://www.youtube.com/watch?v=oHg5SJYRHA0"));
+    assert_eq!(response_json["video"]["length"], 120);
+    assert_eq!(response_json["message"], Value::String(String::from("video found")));
+
+    client.post("/register/2/1").dispatch();
+    let mut response = client.get("/video/1").dispatch();
+    let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
+    assert_eq!(response_json["video"]["url"], String::from("interest2_video"));
+    assert_eq!(response_json["video"]["length"], 10);
+    assert_eq!(response_json["message"], Value::String(String::from("video found")));
+}
