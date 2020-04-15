@@ -9,12 +9,12 @@ mod db;
 mod environment;
 mod model;
 mod video;
-use futures::join;
+
 use rocket::response::status;
-use rocket::response::content;
 use futures::executor::block_on;
 use rocket_contrib::json::JsonValue;
 use serde_json::json;
+mod devices;
 
 
 
@@ -36,25 +36,37 @@ fn default() -> &'static str {
  * Tracker and station must exist, if not 404 is returned
  */
 #[post("/register/<station_id>/<tracker_id>")]
-fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<content::Json<String>>> {
-    match block_on(ftr_register_tracker_location(station_id, tracker_id)) {
+fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<JsonValue>> {
+    match block_on(devices::ftr_register_tracker_location(station_id, tracker_id)) {
         Ok((ok_station, ok_tracker)) => 
             Some(status::Created(format!("/trackers/{}", ok_station), 
-            Some(content::Json(format!("{{ 'status': 'registered', 'tracker_id': '{}' }}", ok_tracker))))),
+            Some(JsonValue(json!({"status": "registered", "tracker_id": ok_tracker}))))),
         Err(e) => {println!("{}",e); None}
     }
 }
 
 /**
+ * Unregisters a certain tracker from a certain receiver. If the tracker is not registered to this receiver, nothing happens
+ * but a 200 is returned. 
+ */
+#[post("/unregister/<station_id>/<tracker_id>")]
+fn unregister(station_id: i32, tracker_id: i32) ->  Option<JsonValue> {
+    match block_on(devices::ftr_unregister_tracker_location(station_id, tracker_id)) {
+        Ok(_) =>  Some(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id}))),
+        Err(e) => {println!("{}",e); None}
+    }
+}
+
+
+/**
  * Find out what receiver if any a tracker is registered at.
  */
 #[get("/trackers/<tracker_id>")]
-fn get_tracker( tracker_id: i32) ->  Option<Result<content::Json<String>, &'static str>> {
+fn get_tracker( tracker_id: i32) ->  Option<Result<JsonValue, &'static str>> {
     match db::get_tracker_info(tracker_id) {
-        Ok(Some(tr)) => Some(Ok(content::Json(format!("{{ 'id': {}, 'location': {}}}", tr.id, match tr.location {
-            Some(val) => format!("{}", val),
-            None => format!("null")
-        })))),
+        Ok(Some(tr)) => 
+        Some(Ok(
+            JsonValue(json!({"id": tr.id, "location": tr.location})))),
         Ok(None) => None,
         Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
     }
@@ -77,34 +89,9 @@ fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<Str
     }
 }
 
-/// Registers new tracker location to database
-async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result<(i32, i32), &'static str> {
-    match join!(validate_receiver_id(station), validate_tracker_id(tracker)) {
-        (Ok(_), Ok(_))  => 
-            match db::register_tracker_to_tracker(station, tracker) {
-            Ok(_) => Ok((station, tracker)),
-            Err(e) => {println!("{}", e); panic!(e)}
-        },
-        (Err(err), _) | (_, Err(err)) => 
-            {println!("it went bad"); return Err(err)}
-    }
-}
 
-async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
-    match db::receiver_exists(station_id) {
-        Ok(Some(_)) => Ok(()),
-        Ok(None) => Err("No such tracker exists"),
-        Err(e) => {println!("{}",e); Err("Unknown Error when accessing database")}
-    }
-}
 
-async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
-    match db::tracker_exists(tracker_id) {
-        Ok(Some(_)) => Ok(()),
-        Ok(None) => Err("No such tracker exists"),
-        Err(e) => {println!("{}",e); Err("Unknown Error when accessing database")}
-    }
-}
+
 
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
@@ -115,7 +102,7 @@ fn main() {
 }
 
 fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video]).register( catchers![not_found])
+    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video, unregister]).register( catchers![not_found])
 }
 
 fn check_env() {

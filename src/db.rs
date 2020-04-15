@@ -2,7 +2,7 @@
  * Database layer.
  */
 use mysql::TxOpts;
-use mysql::prelude::*;
+use mysql::prelude::Queryable;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use crate::environment;
@@ -38,6 +38,22 @@ pub fn get_all_agencies() -> mysql::Result<Vec<Agency>> {
     })
 }
 
+pub fn unregister_tracker(tracker_id: i32) -> Result<(), mysql::error::Error> { 
+    let guard = DB.lock().unwrap(); 
+    let mut tx = guard.conn.start_transaction(TxOpts::default()).unwrap();
+    //let result =  tx.exec_drop("update rfid_tracker set location = ? where id = ?", (tracker_id, tracker_id));
+    let result = tx.exec_drop("update rfid_tracker set location = null where id = ?", vec![tracker_id]); 
+    match result {
+        Ok(_) => {tx.commit().expect("Error commiting transacton")},
+        _ => {tx.rollback().expect("Error rolling back transaction")}
+    }
+    drop(guard);
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) =>  Err(e)
+    }
+}
+
 pub fn register_tracker_to_tracker(receiver: i32, tracker: i32) -> Result<(), mysql::error::Error> {
     let receiver_location_res = DB.lock().unwrap().get_conn().query_first(
     format!("select id, location from rfid_receiver where id = {}", receiver));    
@@ -69,6 +85,20 @@ pub fn get_tracker_info(tracker_id: i32) -> Result<Option<Tracker>, String> {
     format!("select * from rfid_tracker where id = {}", tracker_id),
     |(id, location)| { 
         Tracker { id, location }
+    }).unwrap();
+
+    match matches.len() {
+        0 => Ok(None),
+        1 => Ok(Some(matches[0])),
+        _ => Err(format!("unexpected result, malformed database or backend bug" ))
+    }
+}
+
+pub fn get_receiver_info(receiver_id: i32) -> Result<Option<Receiver>, String> {
+    let matches = DB.lock().unwrap().get_conn().query_map(
+    format!("select * from rfid_receiver where id = {}", receiver_id),
+    |(id, location)| { 
+        Receiver { id, location }
     }).unwrap();
 
     match matches.len() {
