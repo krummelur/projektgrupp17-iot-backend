@@ -14,10 +14,15 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose -- --test-threads=1
     env:
-      RUST_IOT_ENVIRONMENT: PRODUCTION
+      RUST_IOT_ENVIRONMENT: TEST
       SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
       SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
       SQL_DB_NAME: ${{ secrets.SQL_DB_NAME }}
       SQL_HOST: ${{ secrets.SQL_HOST }}
+      SQL_USERNAME_TEST: ${{ secrets.SQL_USERNAME_TEST }}
+      SQL_PASSWORD_TEST: ${{ secrets.SQL_PASSWORD_TEST }}
+      SQL_DB_NAME_TEST: ${{ secrets.SQL_DB_NAME_TEST }}
+      SQL_HOST_TEST: ${{ secrets.SQL_HOST_TEST }}
+      SQL_DB_NAME_TEST: iot_project_db
