@@ -11,6 +11,10 @@ registers that a specific device has been seen by a transceiver station, both th
 
 * /trackers/tracker_id (get)
 
+Gets info about a specified tracker 
+
+* /unregister/receiver_id/tracker_id (post)
+
 Unregisters a specific tracke from a specific receiver
 
 * /videos/<display_id> (get)
