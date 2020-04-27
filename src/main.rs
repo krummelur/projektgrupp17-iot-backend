@@ -5,6 +5,7 @@
 #[macro_use] extern crate rocket;
 #[cfg(test)] mod integration_tests;
 extern crate futures;
+
 mod db;
 mod environment;
 mod model;
@@ -15,7 +16,6 @@ use futures::executor::block_on;
 use rocket_contrib::json::JsonValue;
 use serde_json::json;
 mod devices;
-
 
 
 #[catch(404)]
@@ -57,13 +57,12 @@ fn unregister(station_id: i32, tracker_id: i32) ->  Option<JsonValue> {
     }
 }
 
-
 /**
  * Find out what receiver if any a tracker is registered at.
  */
 #[get("/trackers/<tracker_id>")]
 fn get_tracker( tracker_id: i32) ->  Option<Result<JsonValue, &'static str>> {
-    match db::get_tracker_info(tracker_id) {
+    match db::get_tracker_by_id(tracker_id) {
         Ok(Some(tr)) => 
         Some(Ok(
             JsonValue(json!({"id": tr.id, "location": tr.location})))),
@@ -71,6 +70,7 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<JsonValue, &'static str>> {
         Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
     }
 }
+
 /**
  * Get the most appropriate video to play on the screen of specified id
  * Appropriateness depends on the trackers currently registered to the reciver, and their interests
@@ -78,20 +78,15 @@ fn get_tracker( tracker_id: i32) ->  Option<Result<JsonValue, &'static str>> {
 #[get("/video/<display_id>")]
 fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<String>>> {
     match db::get_display_by_id(display_id) {
-        Ok(None) => return Err(None),
+        Ok(None) =>  return Err(None),
         _ => ()
     };
-
     match video::find_relevant_video(display_id) {
         Err(e) => Err(Some(status::BadRequest(Some(e)))),
         Ok(Some(v)) => Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec}, "message": "video found"}))),
         Ok(None) => Ok(JsonValue(json!({"video": null, "message": "no trackers registered to location" })))
     }
 }
-
-
-
-
 
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
@@ -111,7 +106,6 @@ fn check_env() {
         true =>  colour::dark_red!("\n### WARNING! USING PRODUCTION ENVIRONMENT ###\n\n")
     }
 }
-
 
 /** 
  * Tests

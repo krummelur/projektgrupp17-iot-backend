@@ -17,3 +17,9 @@ pub struct Receiver {
     pub id: i32,
     pub location: i32
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Display {
+    pub id: i32,
+    pub location: i32
+}

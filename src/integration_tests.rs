@@ -5,14 +5,9 @@ use rocket::local::Client;
 use rocket::http::Status;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use mysql::prelude::*;
-use std::{thread, time};
 use serde_json::Value;
 
 lazy_static! { static ref CONN: Mutex<mysql::Pool> = Mutex::new(connect()) ;}
-
-//Mutex for running parallel tests
-//lazy_static! {static ref test_mutex: Mutex<()> = Mutex::new(());}
 
 fn connect() -> mysql::Pool {
     let environment = environment::db_environment_values();
@@ -34,17 +29,15 @@ let ok_env = environment::get_current_env() == environment::TEST_STRING;
 /*Reset the database to an empty state*/
 fn reset_db() {
     CONN.lock()
-    .unwrap().get_conn().unwrap()
-    .query_drop(format!(
-        r#"{query}"#, query = test_data::CREATE_SQL_STMT 
-    )).unwrap();
-    thread::sleep(time::Duration::from_millis(5));
+    .unwrap().get_conn().unwrap().query(
+            format!(r#"{query}"#, query = test_data::CREATE_SQL_STMT)
+        ).map(|_| ()).expect("ERROR RESETTING DB")
 }
 
 fn query_db(query: &'static str) {
     CONN.lock()
-    .unwrap().get_conn().unwrap()
-    .query_drop(query).unwrap();
+    .unwrap().get_conn().unwrap().query(query)
+        .map(|_| ()).expect(query);
 }
 
 /*TESTS*/
@@ -76,7 +69,6 @@ fn get_untracked_tracker_info() {
     assert_eq!(response_json["location"], Value::Null, "Id should be 1 when getting tracker 1");
 }
 
-
 #[test]
 fn register_nonexistant_tracker() { 
     reset_db();
@@ -84,7 +76,6 @@ fn register_nonexistant_tracker() {
     let response = client.post("/register/1/1").dispatch();
     assert_eq!(response.status(), Status::from_code(404).unwrap());
 }
-
 
 #[test]
 fn register_and_get_tracker() {
@@ -148,7 +139,6 @@ fn unregister_and_get_tracker() {
     assert_eq!(response_json["id"], 1, "Correct id on get registered tracker");
     assert_eq!(response_json["location"], Value::Null, "Correct location on get registered tracker");
 }
-
 #[test]
 fn get_video_for_nonexistant_display() {
     reset_db();
@@ -202,7 +192,6 @@ fn get_video_for_with_trackers() {
     assert_eq!(response_json["video"]["url"], String::from("https://www.youtube.com/watch?v=oHg5SJYRHA0"));
     assert_eq!(response_json["video"]["length"], 120);
     assert_eq!(response_json["message"], Value::String(String::from("video found")));
-
     client.post("/register/2/1").dispatch();
     let mut response = client.get("/video/1").dispatch();
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();

@@ -8,7 +8,6 @@ use crate::model::*;
  * Returns the url for the most relevant video, or None, if there is no matching video
  */
 pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, String> {
-    
     //Find out where the display is located
     let location = match db::get_display_location(display_id) {
         Some(val) => val,
@@ -25,7 +24,7 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, Strin
     for x in interests.iter() {
         println!("interest: {}, weight: {}", x.0, x.1)    
     }
-
+    
     //Find all payed videos, where the interests match location interests
     //TODO: only match payed videos
     let videos = match db::find_eligible_videos_by_interest(interests.iter().map(|x| x.0).collect()) {
@@ -37,7 +36,6 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, Strin
     //If the below line is used, the compiler should not allow it since it reuses a borrowed value, but it does, and seems to silently fail in the loop, after first iteration. 
     //Seems to be a bug in the compiler, or a bug in iter()
     //let mut video_iter = videos.iter();
-    
     for x in interests.iter() {
         match videos.iter().find(|el| el.interest == x.0) {
             Some(val) => return Ok(Some(val.clone())),
