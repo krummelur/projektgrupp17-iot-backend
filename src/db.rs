@@ -32,7 +32,7 @@ impl Dbconn {
 /**
  * Sets the id of the tracker with id tracker_id to null
  * */ 
-pub fn unregister_tracker(tracker_id: i32) -> Result<(), String> {
+pub fn unregister_tracker(tracker_id: &String) -> Result<(), String> {
     match DB.lock().unwrap().get_conn().prep_exec("update rfid_tracker set location = null where id = ?", vec![tracker_id]) {
         Ok(_) => Ok(()),
         Err(e) => e.print_err_get_mess::<()>()
@@ -42,7 +42,7 @@ pub fn unregister_tracker(tracker_id: i32) -> Result<(), String> {
 /**
  * Sets the location of the tracker with id tracker_id to the location found in location of receiver with id receiver_id.  
  */
-pub fn register_tracker_to_receiver(receiver_id: i32, tracker_id: i32) -> Result<(), String> {
+pub fn register_tracker_to_receiver(receiver_id: &String, tracker_id: &String) -> Result<(), String> {
     let db_receiver = match get_receiver_by_id(receiver_id) {
         Ok(Some(val)) => val,
         Ok(None) => return Ok(()),
@@ -57,7 +57,7 @@ pub fn register_tracker_to_receiver(receiver_id: i32, tracker_id: i32) -> Result
 /**
  * Gets the Tracker with id tracker_id
  */
-pub fn get_tracker_by_id(tracker_id: i32) -> Result<Option<Tracker>, String> {
+pub fn get_tracker_by_id(tracker_id: &String) -> Result<Option<Tracker>, String> {
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from rfid_tracker where id = ?", (tracker_id,)) {
             Ok(Some((id, location))) => Ok(Some(Tracker{id, location})),
@@ -69,7 +69,7 @@ pub fn get_tracker_by_id(tracker_id: i32) -> Result<Option<Tracker>, String> {
 /**
  * Gets the receiver with id receiver_id  
  */
-pub fn get_receiver_by_id(receiver_id: i32) -> Result<Option<Receiver>, String> {
+pub fn get_receiver_by_id(receiver_id: &String) -> Result<Option<Receiver>, String> {
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from rfid_receiver where id = ?", (receiver_id,)) {
             Ok(Some((id, location))) => Ok(Some(Receiver{id, location})),
@@ -128,38 +128,65 @@ pub fn get_interests_at_location(location: i32) -> Result<Option<Vec<(i32, f32)>
         }
 }
 
+pub fn get_advertisement_video_by_id(video_id: i32) -> Result<Option<AdvertVideo>, String> {
+    match DB.lock().unwrap().get_conn().first_exec("SELECT interest, url, length_sec
+    FROM advertisement_video where id = ?", (video_id,)) {
+        Ok(Some((interest, url, length_sec))) => Ok(Some(AdvertVideo{interest, url, length_sec})),
+        Err(e) => e.print_err_get_mess(),
+        _ => Ok(None)
+    }
+}
+
+pub fn insert_played_video(video_id: i32, time_epoch: u64) -> Result<(), String> {
+    match DB.lock().unwrap().get_conn().prep_exec("INSERT INTO played_video (video, time_epoch) values(?, ?)", (video_id, time_epoch)) {
+        Ok(_) => Ok(()),
+        Err(e) => e.print_err_get_mess::<()>()
+    }
+} 
+
+pub fn draw_credits_for_order_by_video(video_id: i32, credits: i32) -> Result<(), String>{
+    match DB.lock().unwrap().get_conn().prep_exec("UPDATE orders set credits = credits - ? where id = ?", (credits, video_id)) {
+        Ok(_) => Ok(()),
+        Err(e) => e.print_err_get_mess::<()>()
+    }
+} 
+
 /**
  * Finds all elligible videos for the interesets contained in the Vec<i32> interests with interest_id's 
  */
-pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<Vec<AdvertVideo>>, String> {
+pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<Vec<AdvertVideoOrder>>, String> {
     let q_marks = &interests.iter().fold(String::from(""), |a, _b| format!("{}, ?", a))[1..];
-    let prep_q = format!("SELECT interest, url, length_sec
-    FROM advertisement_video where interest in ({})", q_marks);
+    let prep_q = format!(
+        "SELECT interest, url, length_sec, orders FROM advertisement_video, advertisement_order, orders
+        where interest in ({})
+        and advertisement_order.video = advertisement_video.id
+        and advertisement_order.orders = orders.id
+        and orders.credits > 0", q_marks);
     println!("{}", prep_q);
 
-    let selected_p: Result<Vec<AdvertVideo>, mysql::error::Error> =  DB.lock().unwrap().get_conn().prep_exec(
+    let selected_p: Result<Vec<AdvertVideoOrder>, mysql::error::Error> =  DB.lock().unwrap().get_conn().prep_exec(
         prep_q, interests).map(|result| {
            result.map(|x| x.unwrap()).map(|row| {
-           let (interest, url, length_sec) = mysql::from_row(row);
-           AdvertVideo{interest, url, length_sec}
+           let (interest, url, length_sec, order) = mysql::from_row(row);
+           AdvertVideoOrder{interest, url, length_sec, order}
             }).collect()
         });
-        match selected_p {
-            Err(e) => e.print_err_get_mess(),
-            _ => {let res = selected_p.unwrap(); 
-                match res.len() {
-                    0 => Ok(None),
-                    _ => Ok(Some(res))
-                }
+    match selected_p {
+        Err(e) => e.print_err_get_mess(),
+        _ => {let res = selected_p.unwrap(); 
+            match res.len() {
+                0 => Ok(None),
+                _ => Ok(Some(res))
             }
         }
+    }
 }
 
 
 /**
  * Returns an Option for the tracker with id tr_id 
  */
-pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
+pub fn tracker_exists(tr_id: &String) -> mysql::Result<Option<i32>> {
     DB.lock().unwrap().get_conn().first_exec(
     "select id from rfid_tracker where id = ?", (tr_id,))
 }
@@ -170,14 +197,16 @@ trait PrintErr {
 impl PrintErr for mysql::error::Error {   
     fn print_err_get_mess<T>(&self) -> Result<T, String> {
         eprintln!("ERROR: {}", &self);
-        Err(format!("{}", &self))
+        panic!("{}", &self);
+        //Err(format!("{}", &self))
     }
 }
 
 impl PrintErr for String {
     fn print_err_get_mess<T>(&self) -> Result<T, String> {
         eprintln!("ERROR: {}", &self);
-        Err(format!("{}", &self))
+        panic!("{}", &self);
+        //Err(format!("{}", &self))
     }
 }
 

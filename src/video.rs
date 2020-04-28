@@ -3,11 +3,43 @@
 */
 use crate::db;
 use crate::model::*;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+
+/**
+ *  Registers a view in played_videos 
+ */
+pub fn register_video_view(_display_id: i32, video_id: i32, order_id: i32) ->  Result<(), Option<()>>{
+    //TODO make db-intreaction transactonal since one update could fail.
+    /*
+    match db::get_display_by_id(display_id) {
+        Ok(None) => return Err(None),
+        Ok(_) => (),
+        _ => ()
+    };
+    */
+    
+    let video_data: AdvertVideo = match (db::get_advertisement_video_by_id(video_id), db::get_advertisement_video_by_id(video_id)) {
+        (Ok(Some(_)), Ok(None))  => return Err(None),
+        (Ok(None), _) => return Err(Some(())),
+        (Ok(Some(video)), Ok(Some(_))) => video,
+        _ => return Err(None)
+    };
+    
+    let credits_amt = std::cmp::max(video_data.length_sec/30, 1);
+    match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(n) =>    match (db::insert_played_video(video_id, n.as_secs()), db::draw_credits_for_order_by_video(order_id, credits_amt)) {
+                        (Ok(_), Ok(_)) => Ok(()),
+                        _ => panic!("ERROR UPDATING TABLES")
+                    },
+        Err(e) => panic!("ERROR GETTING SYSTEM TIME!, ERROR\n{}", e),
+    }
+}
 
 /**
  * Returns an Optional AdvertVideo for the most relevant video, None if there is no payed for video that matches the interests at the location
  */
-pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, String> {
+pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideoOrder>, String> {
     //Find out where the display is located
     let location = match db::get_display_location(display_id) {
         Some(val) => val,

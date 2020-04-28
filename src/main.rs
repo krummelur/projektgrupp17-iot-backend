@@ -26,6 +26,9 @@ fn not_found() -> JsonValue {
     }))
 }
 
+/**
+ * Gets the current API version 
+ */
 #[get("/")]
 fn default() -> &'static str {
     "IoT server v0.0.0"
@@ -36,11 +39,11 @@ fn default() -> &'static str {
  * Tracker and station must exist, if not 404 is returned
  */
 #[post("/register/<station_id>/<tracker_id>")]
-fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<JsonValue>> {
-    match block_on(devices::ftr_register_tracker_location(station_id, tracker_id)) {
-        Ok((ok_station, ok_tracker)) => 
-            Some(status::Created(format!("/trackers/{}", ok_station), 
-            Some(JsonValue(json!({"status": "registered", "tracker_id": ok_tracker}))))),
+fn register(station_id: String, tracker_id: String) ->  Option<status::Created<JsonValue>> {
+    match block_on(devices::ftr_register_tracker_location(&station_id, &tracker_id)) {
+        Ok(()) => 
+            Some(status::Created(format!("/trackers/{}", station_id), 
+            Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))))),
         Err(e) => {println!("{}",e); None}
     }
 }
@@ -50,10 +53,23 @@ fn register(station_id: i32, tracker_id: i32) ->  Option<status::Created<JsonVal
  * but a 200 is returned. 
  */
 #[post("/unregister/<station_id>/<tracker_id>")]
-fn unregister(station_id: i32, tracker_id: i32) ->  Option<JsonValue> {
-    match block_on(devices::ftr_unregister_tracker_location(station_id, tracker_id)) {
+fn unregister(station_id: String, tracker_id: String) ->  Option<JsonValue> {
+    match block_on(devices::ftr_unregister_tracker_location(&station_id, &tracker_id)) {
         Ok(_) =>  Some(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id}))),
         Err(e) => {println!("{}",e); None}
+    }
+}
+
+/**
+ * Registers a view of a specified video_id from a specific display_id
+ */
+#[post("/views/<display_id>/<video_id>/<order_id>")]
+fn register_view(display_id: i32, video_id: i32, order_id: i32) -> Result<JsonValue,  Option<status::BadRequest<JsonValue>>> {
+//TODO: The number of credits could be a factor of the playtime and the amount of registered people in at the location    
+    match video::register_video_view(display_id, video_id, order_id) {
+        Err(None) => Err(None),
+        Err(Some(_)) => Err(Some(status::BadRequest(Some(JsonValue(json!({"status": "error", "message": "could not be fullfilled, check video_id"})))))),
+        Ok(_) => Ok(JsonValue(json!({"status": "success", "message": "video play logged"})))
     }
 }
 
@@ -61,8 +77,9 @@ fn unregister(station_id: i32, tracker_id: i32) ->  Option<JsonValue> {
  * Find out what receiver if any a tracker is registered at.
  */
 #[get("/trackers/<tracker_id>")]
-fn get_tracker( tracker_id: i32) ->  Option<Result<JsonValue, &'static str>> {
-    match db::get_tracker_by_id(tracker_id) {
+fn get_tracker( tracker_id: String) ->  Option<Result<JsonValue, &'static str>> {
+    println!("{}", tracker_id);
+    match db::get_tracker_by_id(&tracker_id) {
         Ok(Some(tr)) => 
         Some(Ok(
             JsonValue(json!({"id": tr.id, "location": tr.location})))),
@@ -83,7 +100,7 @@ fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<Str
     };
     match video::find_relevant_video(display_id) {
         Err(e) => Err(Some(status::BadRequest(Some(e)))),
-        Ok(Some(v)) => Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec}, "message": "video found"}))),
+        Ok(Some(v)) => Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec, "order": v.order}, "message": "video found"}))),
         Ok(None) => Ok(JsonValue(json!({"video": null, "message": "no trackers registered to location" })))
     }
 }
@@ -97,7 +114,7 @@ fn main() {
 }
 
 fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video, unregister]).register( catchers![not_found])
+    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video, unregister, register_view]).register( catchers![not_found])
 }
 
 fn check_env() {

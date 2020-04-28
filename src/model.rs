@@ -6,6 +6,15 @@ pub struct AdvertVideo {
     pub length_sec: i32
 }
 
+
+#[derive(Debug, Clone)]
+pub struct AdvertVideoOrder {
+    pub interest: i32,
+    pub url: String, 
+    pub length_sec: i32,
+    pub order: i32
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Tracker {
     pub id: i32,

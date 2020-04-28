@@ -3,11 +3,11 @@ use crate::db;
 use crate::model::*;
 
 /// Registers new tracker location to database
-pub async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result<(i32, i32), &'static str> {
-    match join!(validate_receiver_id(station), validate_tracker_id(tracker)) {
+pub async fn ftr_register_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), &'static str> {
+    match join!(validate_receiver_id(receiver_id), validate_tracker_id(tracker_id)) {
         (Ok(_), Ok(_))  => 
-            match db::register_tracker_to_receiver(station, tracker) {
-            Ok(_) => Ok((station, tracker)),
+            match db::register_tracker_to_receiver(receiver_id, tracker_id) {
+            Ok(_) => Ok(()),
             Err(e) => {println!("{}", e); panic!(e)}
         },
         (Err(err), _) | (_, Err(err)) => 
@@ -18,7 +18,7 @@ pub async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result
 /**
  * Unregisters a tracker from a location, only if it currently registered to this location. 
  */
-pub async fn ftr_unregister_tracker_location(receiver_id: i32, tracker_id: i32) -> Result<(), &'static str> {
+pub async fn ftr_unregister_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), &'static str> {
     match join!(validate_receiver_id(receiver_id), validate_tracker_id(tracker_id)) {
         (Ok(_), Ok(_))  => {
             let tracker_loc = match db::get_tracker_by_id(tracker_id).unwrap().unwrap().location {
@@ -42,7 +42,7 @@ pub async fn ftr_unregister_tracker_location(receiver_id: i32, tracker_id: i32) 
 /**
  * Validates a receiver by id. Ok(()) if exists, Err() if not  
  */
-pub async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
+pub async fn validate_receiver_id(station_id: &String) -> Result<(), &'static str>{
     match db::get_receiver_by_id(station_id) {
         Ok(Some(_)) => Ok(()),
         Ok(None) => Err("No such tracker exists"),
@@ -53,7 +53,7 @@ pub async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
 /**
  * Validates a tracker by id. Ok(()) if exists, Err() if not  
  */
-pub async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
+pub async fn validate_tracker_id(tracker_id: &String) -> Result<(), &'static str>{
     match db::tracker_exists(tracker_id) {
         Ok(Some(_)) => Ok(()),
         Ok(None) => Err("No such tracker exists"),
