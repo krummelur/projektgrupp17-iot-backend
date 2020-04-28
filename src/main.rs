@@ -13,10 +13,17 @@ mod video;
 
 use rocket::response::status;
 use futures::executor::block_on;
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{JsonValue, Json};
 use serde_json::json;
+use serde::Deserialize;
+
 mod devices;
 
+#[derive(Deserialize)]
+struct RegisterBody {
+    loc: String,
+    tag: String
+}
 
 #[catch(404)]
 fn not_found() -> JsonValue {
@@ -26,12 +33,42 @@ fn not_found() -> JsonValue {
     }))
 }
 
+
+#[catch(400)]
+fn bad_request() -> JsonValue {
+    JsonValue(json!({
+        "status": "error",
+        "message": "request could not be fullfilled. Check request headers and body format."
+    }))
+}
+
+#[catch(422)]
+fn unproc_request() -> JsonValue {
+    JsonValue(json!({
+        "status": "error",
+        "message": "request could not be processed. Check request headers and body content."
+    }))
+}
+
 /**
  * Gets the current API version 
  */
 #[get("/")]
 fn default() -> &'static str {
-    "IoT server v0.0.0"
+    "IoT server v1.0.0"
+}
+
+/**
+ * Register a certain tracker to a certain location, using json data
+ * body: 
+ * {
+ *  loc: id, 
+ *  tag: id
+ * }
+ *  */
+#[post("/register", data = "<body>")]
+fn register_json(body: Json<RegisterBody>) -> Option<status::Created<JsonValue>> {
+    register(body.loc.clone(), body.tag.clone())
 }
 
 /**
@@ -114,7 +151,7 @@ fn main() {
 }
 
 fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/", routes![default, register, get_tracker, get_video, unregister, register_view]).register( catchers![not_found])
+    rocket::ignite().mount("/", routes![default, register, register_json, get_tracker, get_video, unregister, register_view]).register( catchers![not_found, bad_request, unproc_request])
 }
 
 fn check_env() {

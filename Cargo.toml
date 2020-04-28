@@ -1,6 +1,6 @@
 [package]
 name = "proj17_iot-server"
-version = "0.0.0"
+version = "1.0.0"
 publish = false
 edition = "2018"
 
@@ -17,7 +17,7 @@ lazy_static = "1.4.0"
 colour = "*"
 reduce = "*"
 exitcode = "1.1.2"
-serde = "1.0.94"
+serde = { version="1.0.94", features = ["derive"]}
 serde_derive = "1.0.94"
 serde_json = "1.0.40"
 
