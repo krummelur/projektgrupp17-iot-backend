@@ -15,6 +15,9 @@ pub async fn ftr_register_tracker_location(station: i32, tracker: i32) -> Result
     }
 }
 
+/**
+ * Unregisters a tracker from a location, only if it currently registered to this location. 
+ */
 pub async fn ftr_unregister_tracker_location(receiver_id: i32, tracker_id: i32) -> Result<(), &'static str> {
     match join!(validate_receiver_id(receiver_id), validate_tracker_id(tracker_id)) {
         (Ok(_), Ok(_))  => {
@@ -36,6 +39,9 @@ pub async fn ftr_unregister_tracker_location(receiver_id: i32, tracker_id: i32) 
     }
 }
 
+/**
+ * Validates a receiver by id. Ok(()) if exists, Err() if not  
+ */
 pub async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
     match db::get_receiver_by_id(station_id) {
         Ok(Some(_)) => Ok(()),
@@ -44,6 +50,9 @@ pub async fn validate_receiver_id(station_id: i32) -> Result<(), &'static str>{
     }
 }
 
+/**
+ * Validates a tracker by id. Ok(()) if exists, Err() if not  
+ */
 pub async fn validate_tracker_id(tracker_id: i32) -> Result<(), &'static str>{
     match db::tracker_exists(tracker_id) {
         Ok(Some(_)) => Ok(()),

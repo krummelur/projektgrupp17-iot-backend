@@ -29,6 +29,9 @@ impl Dbconn {
     }
 }
 
+/**
+ * Sets the id of the tracker with id tracker_id to null
+ * */ 
 pub fn unregister_tracker(tracker_id: i32) -> Result<(), String> {
     match DB.lock().unwrap().get_conn().prep_exec("update rfid_tracker set location = null where id = ?", vec![tracker_id]) {
         Ok(_) => Ok(()),
@@ -36,30 +39,24 @@ pub fn unregister_tracker(tracker_id: i32) -> Result<(), String> {
     }
 }
 
-pub fn register_tracker_to_receiver(receiver: i32, tracker: i32) -> Result<(), String> {
-    //mysql::QueryResult
-    /*let receiver_location_res = DB.lock().unwrap().get_conn().first_exec(
-    "select id, location from rfid_receiver where id = ?", (receiver,));    
-    let db_receiver = match receiver_location_res {
-        Ok(Some((id, location))) => Receiver{id, location},
-        Ok(None) => return Ok(()),
-        Err(e) => {println!("{}", e); return Err(e)}
-    };
-    */
-    let db_receiver = match get_receiver_by_id(receiver) {
+/**
+ * Sets the location of the tracker with id tracker_id to the location found in location of receiver with id receiver_id.  
+ */
+pub fn register_tracker_to_receiver(receiver_id: i32, tracker_id: i32) -> Result<(), String> {
+    let db_receiver = match get_receiver_by_id(receiver_id) {
         Ok(Some(val)) => val,
         Ok(None) => return Ok(()),
         Err(e) => return e.print_err_get_mess()
     };
-
-    //The guard lets us borrow the value for several operations. Like a lock. 
-     
-    match DB.lock().unwrap().get_conn().prep_exec("update rfid_tracker set location = ? where id = ?", (db_receiver.location, tracker)) {
+    match DB.lock().unwrap().get_conn().prep_exec("update rfid_tracker set location = ? where id = ?", (db_receiver.location, tracker_id)) {
         Ok(_) => Ok(()),
         Err(e) =>  e.print_err_get_mess()
     }
 }
 
+/**
+ * Gets the Tracker with id tracker_id
+ */
 pub fn get_tracker_by_id(tracker_id: i32) -> Result<Option<Tracker>, String> {
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from rfid_tracker where id = ?", (tracker_id,)) {
@@ -69,6 +66,9 @@ pub fn get_tracker_by_id(tracker_id: i32) -> Result<Option<Tracker>, String> {
     }
 }
 
+/**
+ * Gets the receiver with id receiver_id  
+ */
 pub fn get_receiver_by_id(receiver_id: i32) -> Result<Option<Receiver>, String> {
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from rfid_receiver where id = ?", (receiver_id,)) {
@@ -78,6 +78,9 @@ pub fn get_receiver_by_id(receiver_id: i32) -> Result<Option<Receiver>, String> 
     }
 }
 
+/**
+ * Gets the location of the dislay with id display_id 
+ */
 pub fn get_display_location(display_id: i32) -> Option<i32> {
     match DB.lock().unwrap().get_conn().first_exec(
     "select location from display where id = ?", (display_id,)) {
@@ -86,6 +89,9 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
     }
 }
 
+/**
+ * Gets the Display with the id display_id
+ */
 pub fn get_display_by_id(display_id: i32) ->  Result<Option<Display>, String> {
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from display where id = ?", (display_id,)) {
@@ -120,50 +126,16 @@ pub fn get_interests_at_location(location: i32) -> Result<Option<Vec<(i32, f32)>
                 }
             }
         }
-    
-        /*
-    mysql_common::value::Value;
-    match DB.lock().unwrap().get_conn().prep_exec(
-        //Get the aggregate interest for the location, then map into (interest, weight) tuple
-        "select interest, sum(weight) as weight from rfid_tracker, tracker_interest where 
-                location = ? and tracker = id
-                group by interest
-                order by weight desc;", (location,)) {
-                    Err(e) => e.printErr_getMess::<Option<Vec<(i32, i32)>>>(),
-                    Ok(q_result) => {
-                            let mapped = q_result.map(|row| {let r = row.unwrap(); (r[0],r[1])});
-                            match mapped.collect::<Vec<(i64, i64)>>().len() {
-                            0 => Ok(None),
-                            _ => Ok(Some(mapped))
-                            }
-                        } 
-                    }
-                    
-    */
-                    /*
-    match DB.lock().unwrap().get_conn().exec_prep(
-        //Get the aggregate interest for the location, then map into (interest, weight) tuple
-        format!("select interest, sum(weight) as weight from rfid_tracker, tracker_interest where 
-                location = {} and tracker = id
-                group by interest
-                order by weight desc;", location),
-        |(interest, weight)| {
-        (interest, weight) }) {
-        Ok(val) => match val.len() {
-            0 => Ok(None),
-            _ => Ok(Some(val))
-        },
-        Err(_) => Err(String::from("error"))
-    }
-    */
 }
 
+/**
+ * Finds all elligible videos for the interesets contained in the Vec<i32> interests with interest_id's 
+ */
 pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<Vec<AdvertVideo>>, String> {
     let q_marks = &interests.iter().fold(String::from(""), |a, _b| format!("{}, ?", a))[1..];
     let prep_q = format!("SELECT interest, url, length_sec
     FROM advertisement_video where interest in ({})", q_marks);
     println!("{}", prep_q);
-
 
     let selected_p: Result<Vec<AdvertVideo>, mysql::error::Error> =  DB.lock().unwrap().get_conn().prep_exec(
         prep_q, interests).map(|result| {
@@ -181,35 +153,17 @@ pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<V
                 }
             }
         }
-
-/*
-    //This fold is stupid but fun.
-    let vids = DB.lock().unwrap().get_conn().query_map(
-    format!("SELECT interest, url, length_sec
-    FROM advertisement_video where interest in ({})", &interests.iter().fold(String::from(""), |a, b| format!("{}, {}", a , b))[1..]),
-    |(interest, url, length_sec)| {
-        AdvertVideo {interest, url, length_sec}
-    });
-    match vids {
-        Ok(val) => 
-            match val.len() {
-            0 => Ok(None),
-            _ => Ok(Some(val))
-            },
-        Err(e) => Err(format!("{}",e))
-    } 
-    */
 }
 
+
+/**
+ * Returns an Option for the tracker with id tr_id 
+ */
 pub fn tracker_exists(tr_id: i32) -> mysql::Result<Option<i32>> {
     DB.lock().unwrap().get_conn().first_exec(
     "select id from rfid_tracker where id = ?", (tr_id,))
 }
 
-pub struct Agency {
-    pub name: String,
-    pub orgnr: String
-}
 trait PrintErr {
     fn print_err_get_mess<T>(&self) -> Result<T, String>;
 }
@@ -219,7 +173,6 @@ impl PrintErr for mysql::error::Error {
         Err(format!("{}", &self))
     }
 }
-
 
 impl PrintErr for String {
     fn print_err_get_mess<T>(&self) -> Result<T, String> {

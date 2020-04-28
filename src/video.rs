@@ -5,7 +5,7 @@ use crate::db;
 use crate::model::*;
 
 /**
- * Returns the url for the most relevant video, or None, if there is no matching video
+ * Returns an Optional AdvertVideo for the most relevant video, None if there is no payed for video that matches the interests at the location
  */
 pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideo>, String> {
     //Find out where the display is located

@@ -90,7 +90,7 @@ fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<Str
 
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
- * */ 
+ */ 
 fn main() {
     check_env();
     rocket().launch();

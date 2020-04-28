@@ -23,3 +23,9 @@ pub struct Display {
     pub id: i32,
     pub location: i32
 }
+
+#[derive(Debug, Clone)]
+pub struct Agency {
+    pub name: String,
+    pub orgnr: String
+}
