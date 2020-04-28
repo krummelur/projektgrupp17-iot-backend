@@ -47,7 +47,7 @@ fn rocket_has_launched() {
     let client = guarded_client();
     let mut response = client.get("/").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(response.body_string(), Some("IoT server v0.0.0".into()));
+    assert_eq!(response.body_string(), Some("IoT server v1.0.0".into()));
 }
 
 #[test]
