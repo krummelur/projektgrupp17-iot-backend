@@ -184,10 +184,10 @@ fn get_video_for_with_trackers_when_trackers_move_around() {
     query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
     query_db("insert into agency (orgnr, name) values(1, \"agency1\");");
     query_db("insert into users (username, email, pass_hash, agency) values(\"user1\",  \"email@example.com\", \"HASH\",1);");
-    query_db("insert into orders (credits, user) values(100, \"user1\");");
-    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, 1,0, 1);");
-    query_db("insert into orders (credits, user) values(20, \"user1\");");
-    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(2, 2,0, 1);");
+    query_db("insert into orders (id, credits, user) values(\"1\", 100, \"user1\");");
+    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, '1',0, 1);");
+    query_db("insert into orders (id, credits, user) values(\"2\", 20, \"user1\");");
+    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(2, '2',0, 1);");
 
     let client = guarded_client();
     client.post("/register/1/1").dispatch();
@@ -226,9 +226,9 @@ fn when_getting_videos_orders_with_no_credit_are_not_given() {
     query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
     query_db("insert into agency (orgnr, name) values(1, \"agency1\");");
     query_db("insert into users (username, email, pass_hash, agency) values(\"user1\",  \"email@example.com\", \"HASH\",1);");
-    query_db("insert into orders (credits, user) values(0, \"user1\");");
+    query_db("insert into orders (id, credits, user) values(\"1\", 0, \"user1\");");
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, 1,0, 1);");
-    query_db("insert into orders (credits, user) values(20, \"user1\");");
+    query_db("insert into orders (id, credits, user) values(\"2\", 20, \"user1\");");
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(2, 2,0, 1);");
 
     let client = guarded_client();
@@ -263,8 +263,8 @@ fn when_video_played_order_credits_are_withdrawn() {
     query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
     query_db("insert into agency (orgnr, name) values(1, \"agency1\");");
     query_db("insert into users (username, email, pass_hash, agency) values(\"user1\",  \"email@example.com\", \"HASH\",1);");
-    query_db("insert into orders (credits, user) values(100, \"user1\");");
-    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, 1,0, 1);");
+    query_db("insert into orders (id, credits, user) values(\"1\", 100, \"user1\");");
+    query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, '1',0, 1);");
     
     let client = guarded_client();
     let mut response = client.post("/views/1/1/1").dispatch();
@@ -273,7 +273,7 @@ fn when_video_played_order_credits_are_withdrawn() {
     assert_eq!(response_json["status"], String::from("success"));
     assert_eq!(response_json["message"], String::from("video play logged"));
     
-    let sql_res: i32 = CONN.lock().unwrap().get_conn().unwrap().first("select credits from orders where id = 1").unwrap().unwrap();
+    let sql_res: i32 = CONN.lock().unwrap().get_conn().unwrap().first("select credits from orders where id = '1'").unwrap().unwrap();
     assert_eq!(sql_res, 96);
 }
 

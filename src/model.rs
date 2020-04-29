@@ -12,7 +12,7 @@ pub struct AdvertVideoOrder {
     pub interest: i32,
     pub url: String, 
     pub length_sec: i32,
-    pub order: i32
+    pub order: String
 }
 
 #[derive(Debug, Clone, Copy)]

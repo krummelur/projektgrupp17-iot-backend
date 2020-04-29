@@ -53,14 +53,14 @@ pass_hash varchar(128) NOT NULL ,
 FOREIGN KEY (`agency`)
 REFERENCES agency(orgnr),
  PRIMARY KEY( username));
-create table `orders` (id integer NOT NULL UNIQUE AUTO_INCREMENT ,
+create table `orders` (id varchar(40) NOT NULL UNIQUE,
 credits integer NOT NULL ,
 user varchar(128) NOT NULL ,
 FOREIGN KEY (`user`)
 REFERENCES users(username),
  PRIMARY KEY( id));
 create table `advertisement_order` (video integer NOT NULL ,
-orders integer NOT NULL ,
+orders varchar(40) NOT NULL ,
 start_time_epoch integer NOT NULL ,
 end_time_epoch integer NOT NULL ,
 FOREIGN KEY (`video`)
