@@ -19,10 +19,11 @@ use serde::Deserialize;
 use rocket::http::Method;
 use rocket_cors;
 use rocket::{get, routes};
-use rocket_cors::{AllowedHeaders, AllowedOrigins, Guard, Responder};
+use rocket_cors::{AllowedHeaders, AllowedOrigins};
+use rocket::{Request, Response};
+use rocket::fairing::{Fairing, Info, Kind};
 
 mod devices;
-
 
 #[derive(Deserialize)]
 struct RegisterBody {
@@ -37,7 +38,6 @@ fn not_found() -> JsonValue {
         "reason": "not found"
     }))
 }
-
 
 #[catch(400)]
 fn bad_request() -> JsonValue {
@@ -59,8 +59,8 @@ fn unproc_request() -> JsonValue {
  * Gets the current API version 
  */
 #[get("/")]
-fn default(cors: Guard<'_>) -> Responder<'_,&str> {
-    cors.responder("IoT server v1.0.0")
+fn default() -> &'static str {
+    "IoT server v1.0.0"
 }
 
 /**
@@ -72,8 +72,8 @@ fn default(cors: Guard<'_>) -> Responder<'_,&str> {
  * }
  *  */
 #[post("/register", data = "<body>")]
-fn register_json(cors: Guard<'_>, body: Json<RegisterBody>) -> Responder<'_, Option<status::Created<JsonValue>>> {
-    register(cors, body.loc.clone(), body.tag.clone())
+fn register_json(body: Json<RegisterBody>) -> Option<status::Created<JsonValue>> {
+    register(body.loc.clone(), body.tag.clone())
 }
 
 /**
@@ -81,12 +81,12 @@ fn register_json(cors: Guard<'_>, body: Json<RegisterBody>) -> Responder<'_, Opt
  * Tracker and station must exist, if not 404 is returned
  */
 #[post("/register/<station_id>/<tracker_id>")]
-fn register(cors: Guard<'_>, station_id: String, tracker_id: String) ->  Responder<'_, Option<status::Created<JsonValue>>> {
+fn register(station_id: String, tracker_id: String) ->  Option<status::Created<JsonValue>> {
     match block_on(devices::ftr_register_tracker_location(&station_id, &tracker_id)) {
         Ok(()) => 
-            cors.responder(Some(status::Created(format!("/trackers/{}", station_id), 
-            Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id})))))),
-        Err(e) => {println!("{}",e); cors.responder(None)}
+            Some(status::Created(format!("/trackers/{}", station_id), 
+            Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))))),
+        Err(e) => {println!("{}",e); None}
     }
 }
 
@@ -95,10 +95,10 @@ fn register(cors: Guard<'_>, station_id: String, tracker_id: String) ->  Respond
  * but a 200 is returned. 
  */
 #[post("/unregister/<station_id>/<tracker_id>")]
-fn unregister(cors: Guard<'_>, station_id: String, tracker_id: String) ->  Responder<'_, Option<JsonValue>> {
+fn unregister(station_id: String, tracker_id: String) -> Option<JsonValue> {
     match block_on(devices::ftr_unregister_tracker_location(&station_id, &tracker_id)) {
-        Ok(_) =>  cors.responder(Some(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id})))),
-        Err(e) => {println!("{}",e); cors.responder(None)}
+        Ok(_) =>  Some(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id}))),
+        Err(e) => {println!("{}",e); None}
     }
 }
 
@@ -106,12 +106,12 @@ fn unregister(cors: Guard<'_>, station_id: String, tracker_id: String) ->  Respo
  * Registers a view of a specified video_id from a specific display_id
  */
 #[post("/views/<display_id>/<video_id>/<order_id>")]
-fn register_view(cors: Guard<'_>, display_id: i32, video_id: i32, order_id: i32) -> Responder<'_, Result<JsonValue, Option<status::BadRequest<JsonValue>>>> {
+fn register_view(display_id: i32, video_id: i32, order_id: i32) -> Result<JsonValue, Option<status::BadRequest<JsonValue>>> {
 //TODO: The number of credits could be a factor of the playtime and the amount of registered people in at the location    
     match video::register_video_view(display_id, video_id, order_id) {
-        Err(None) => cors.responder(Err(None)),
-        Err(Some(_)) => cors.responder(Err(Some(status::BadRequest(Some(JsonValue(json!({"status": "error", "message": "could not be fullfilled, check video_id"}))))))),
-        Ok(_) => cors.responder(Ok(JsonValue(json!({"status": "success", "message": "video play logged"}))))
+        Err(None) => Err(None),
+        Err(Some(_)) => Err(Some(status::BadRequest(Some(JsonValue(json!({"status": "error", "message": "could not be fullfilled, check video_id"})))))),
+        Ok(_) => Ok(JsonValue(json!({"status": "success", "message": "video play logged"})))
     }
 }
 
@@ -119,14 +119,13 @@ fn register_view(cors: Guard<'_>, display_id: i32, video_id: i32, order_id: i32)
  * Find out what receiver if any a tracker is registered at.
  */
 #[get("/trackers/<tracker_id>")]
-fn get_tracker(cors: Guard<'_>, tracker_id: String) ->  Responder<'_,Option<Result<JsonValue, &str>>> {
+fn get_tracker(tracker_id: String) ->  Option<Result<JsonValue, &'static str>> {
     println!("{}", tracker_id);
     match db::get_tracker_by_id(&tracker_id) {
         Ok(Some(tr)) => 
-        cors.responder(Some(Ok(
-            JsonValue(json!({"id": tr.id, "location": tr.location}))))),
-        Ok(None) => cors.responder(None),
-        Err(e) => {println!("{}", e); cors.responder(Some(Err("Unknown error")))}
+        Some(Ok(JsonValue(json!({"id": tr.id, "location": tr.location})))),
+        Ok(None) =>None,
+        Err(e) => {println!("{}", e); Some(Err("Unknown error"))}
     }
 }
 
@@ -135,15 +134,15 @@ fn get_tracker(cors: Guard<'_>, tracker_id: String) ->  Responder<'_,Option<Resu
  * Appropriateness depends on the trackers currently registered to the reciver, and their interests
  */
 #[get("/video/<display_id>")]
-fn get_video(cors: Guard<'_>, display_id: i32) -> Responder<'_,Result<JsonValue, Option<status::BadRequest<String>>>> {
+fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<String>>> {
     match db::get_display_by_id(display_id) {
-        Ok(None) =>  return cors.responder(Err(None)),
+        Ok(None) =>  return Err(None),
         _ => ()
     };
     match video::find_relevant_video(display_id) {
-        Err(e) => cors.responder(Err(Some(status::BadRequest(Some(e))))),
-        Ok(Some(v)) => cors.responder(Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec, "order": v.order}, "message": "video found"})))),
-        Ok(None) => cors.responder(Ok(JsonValue(json!({"video": null, "message": "no trackers registered to location" }))))
+        Err(e) => Err(Some(status::BadRequest(Some(e)))),
+        Ok(Some(v)) => Ok(JsonValue(json!({"video": {"url": v.url, "length": v.length_sec, "order": v.order}, "message": "video found"}))),
+        Ok(None) =>Ok(JsonValue(json!({"video": null, "message": "no trackers registered to location" })))
     }
 }
 
@@ -157,9 +156,10 @@ fn main() {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
+    .attach(ResponsePostProcessor{})
     .mount("/", routes![default, register, register_json, get_tracker, get_video, unregister, register_view])
-    .mount("/", rocket_cors::catch_all_options_routes())
     .register( catchers![not_found, bad_request, unproc_request])
+    .mount("/", rocket_cors::catch_all_options_routes())
     .manage(cors())
 }
 
@@ -178,5 +178,20 @@ fn check_env() {
     match String::from(environment::PRODUCTION_STRING) == environment::get_current_env() {
         false => colour::yellow!("\n### USING STAGING ENVIRONMENT (not an error) ###\n\n"),
         true =>  colour::dark_red!("\n### WARNING! USING PRODUCTION ENVIRONMENT ###\n\n")
+    }
+}
+
+#[derive(Default)]
+struct ResponsePostProcessor {}
+
+impl Fairing for ResponsePostProcessor {
+    fn info(&self) -> Info {
+        Info {
+            name: "Allow origin header",
+            kind: Kind::Request | Kind::Response
+        }
+    }
+    fn on_response(&self, _request: &Request, response: &mut Response) {
+        response.set_raw_header("Access-Control-Allow-Origin", "*");
     }
 }
