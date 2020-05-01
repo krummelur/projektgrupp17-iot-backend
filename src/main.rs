@@ -21,7 +21,6 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use rocket::{Request, Response};
 use rocket::fairing::{Fairing, Info, Kind};
 
-
 /**
  *  Program entrypoint, initializes rocket with the public endpoints
  */ 
@@ -55,6 +54,7 @@ fn rocket() -> rocket::Rocket {
         endpoints::iot_devices::register_json, 
         endpoints::iot_devices::get_tracker, 
         endpoints::iot_devices::unregister, 
+        endpoints::iot_devices::unregister_json, 
         endpoints::videos::register_view,
         endpoints::videos::get_video]) 
     .register( catchers![

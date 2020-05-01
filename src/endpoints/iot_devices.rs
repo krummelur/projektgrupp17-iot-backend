@@ -22,6 +22,20 @@ use super::RegisterBody;
  }
  
  /**
+ * unregister a certain tracker to a certain location, using json data
+ * body: 
+ * {
+ *  loc: id, 
+ *  tag: id
+ * }
+ *  */
+ #[post("/unregister", data = "<body>")]
+ pub fn unregister_json(body: Json<RegisterBody>) -> Option<JsonValue> {
+     unregister(body.loc.clone(), body.tag.clone())
+ }
+ 
+ 
+ /**
   * Register a certain tracker for a certain station
   * Tracker and station must exist, if not 404 is returned
   */
