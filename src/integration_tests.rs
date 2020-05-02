@@ -112,7 +112,6 @@ fn unregister_nonexistant_tracker() {
     assert_eq!(response.status(), Status::from_code(404).unwrap());
 }
 
-
 #[test]
 fn unregister_and_get_tracker() {
     reset_db();

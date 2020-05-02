@@ -11,7 +11,7 @@ use crate::db;
  * Registers a view of a specified video_id from a specific display_id
  */
 #[post("/views/<display_id>/<video_id>/<order_id>")]
-pub fn register_view(display_id: i32, video_id: i32, order_id: i32) -> Result<JsonValue, Option<status::BadRequest<JsonValue>>> {
+pub fn register_view(display_id: i32, video_id: i32, order_id: String) -> Result<JsonValue, Option<status::BadRequest<JsonValue>>> {
     //TODO: The number of registered people in at the location should affect number of credits    
     match video::register_video_view(display_id, video_id, order_id) {
         Err(None) => Err(None),

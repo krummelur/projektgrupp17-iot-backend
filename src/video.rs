@@ -9,16 +9,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /**
  *  Registers a view in played_videos 
  */
-pub fn register_video_view(_display_id: i32, video_id: i32, order_id: i32) ->  Result<(), Option<()>>{
+pub fn register_video_view(_display_id: i32, video_id: i32, order_id: String) ->  Result<(), Option<()>> {
     //TODO make db-intreaction transactonal since one update could fail.
-    /*
-    match db::get_display_by_id(display_id) {
-        Ok(None) => return Err(None),
-        Ok(_) => (),
-        _ => ()
-    };
-    */
-    
+
     let video_data: AdvertVideo = match (db::get_advertisement_video_by_id(video_id), db::get_advertisement_video_by_id(video_id)) {
         (Ok(Some(_)), Ok(None))  => return Err(None),
         (Ok(None), _) => return Err(Some(())),

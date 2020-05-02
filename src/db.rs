@@ -144,7 +144,7 @@ pub fn insert_played_video(video_id: i32, time_epoch: u64) -> Result<(), String>
     }
 } 
 
-pub fn draw_credits_for_order_by_video(video_id: i32, credits: i32) -> Result<(), String>{
+pub fn draw_credits_for_order_by_video(video_id: String, credits: i32) -> Result<(), String>{
     match DB.lock().unwrap().get_conn().prep_exec("UPDATE orders set credits = credits - ? where id = ?", (credits, video_id)) {
         Ok(_) => Ok(()),
         Err(e) => e.print_err_get_mess::<()>()
