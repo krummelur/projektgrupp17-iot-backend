@@ -157,7 +157,7 @@ pub fn draw_credits_for_order_by_video(video_id: i32, credits: i32) -> Result<()
 pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<Vec<AdvertVideoOrder>>, String> {
     let q_marks = &interests.iter().fold(String::from(""), |a, _b| format!("{}, ?", a))[1..];
     let prep_q = format!(
-        "SELECT interest, url, length_sec, orders FROM advertisement_video, advertisement_order, orders
+        "SELECT  advertisement_order.video as video_id, interest, url, length_sec, orders FROM advertisement_video, advertisement_order, orders
         where interest in ({})
         and advertisement_order.video = advertisement_video.id
         and advertisement_order.orders = orders.id
@@ -167,8 +167,8 @@ pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<V
     let selected_p: Result<Vec<AdvertVideoOrder>, mysql::error::Error> =  DB.lock().unwrap().get_conn().prep_exec(
         prep_q, interests).map(|result| {
            result.map(|x| x.unwrap()).map(|row| {
-           let (interest, url, length_sec, order) = mysql::from_row(row);
-           AdvertVideoOrder{interest, url, length_sec, order}
+           let (video_id, interest, url, length_sec, order) = mysql::from_row(row);
+           AdvertVideoOrder{video_id, interest, url, length_sec, order}
             }).collect()
         });
     match selected_p {
@@ -181,7 +181,6 @@ pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<V
         }
     }
 }
-
 
 /**
  * Returns an Option for the tracker with id tr_id 

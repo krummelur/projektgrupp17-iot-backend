@@ -13,7 +13,7 @@ pub fn not_found() -> JsonValue {
 pub fn bad_request() -> JsonValue {
     JsonValue(json!({
         "status": "error",
-        "message": "request could not be fullfilled. Check request headers and body format."
+        "message": "request could not be fullfilled. Check request headers and body format"
     }))
 }
 
@@ -21,6 +21,6 @@ pub fn bad_request() -> JsonValue {
 pub fn unproc_request() -> JsonValue {
     JsonValue(json!({
         "status": "error",
-        "message": "request could not be processed. Check request headers and body content."
+        "message": "request could not be processed. Check request headers and body content"
     }))
 }
