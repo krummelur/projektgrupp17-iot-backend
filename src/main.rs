@@ -49,7 +49,8 @@ fn rocket() -> rocket::Rocket {
     rocket::ignite()
     .attach(ResponsePostProcessor{})
     .mount("/", routes![
-        endpoints::default::default, 
+        endpoints::default, 
+        endpoints::log_message,
         endpoints::iot_devices::register, 
         endpoints::iot_devices::register_json, 
         endpoints::iot_devices::get_tracker, 
