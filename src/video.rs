@@ -9,19 +9,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /**
  *  Registers a view in played_videos 
  */
-pub fn register_video_view(_display_id: i32, video_id: i32, order_id: String) ->  Result<(), Option<()>> {
+pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String) ->  Result<(), Option<()>> {
     //TODO make db-intreaction transactonal since one update could fail.
 
-    let video_data: AdvertVideo = match (db::get_advertisement_video_by_id(video_id), db::get_advertisement_video_by_id(video_id)) {
-        (Ok(Some(_)), Ok(None))  => return Err(None),
-        (Ok(None), _) => return Err(Some(())),
-        (Ok(Some(video)), Ok(Some(_))) => video,
-        _ => return Err(None)
+    let video_data: AdvertVideo = match (db::get_advertisement_video_by_id(video_id), db::get_display_by_id(display_id), db::get_order_by_id(order_id)) {
+        (Ok(Some(_)), Ok(None), _)  => {println!("DISPLAY"); return Err(None)},
+        (Ok(None), _, _) => {println!("VIDEO NOT FOUND"); return Err(Some(()))},
+        (Ok(Some(video)), Ok(Some(_)), Ok(Some(_))) => {println!("ALL FOUND"); video},
+        _ => {println!("other"); return Err(None);}
     };
     
     let credits_amt = std::cmp::max(video_data.length_sec/30, 1);
     match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(n) =>    match (db::insert_played_video(video_id, n.as_secs()), db::draw_credits_for_order_by_video(order_id, credits_amt)) {
+        Ok(n) =>    match (db::insert_played_video(video_id, n.as_secs(), order_id), db::draw_credits_for_order(order_id, credits_amt)) {
                         (Ok(_), Ok(_)) => Ok(()),
                         _ => panic!("ERROR UPDATING TABLES")
                     },

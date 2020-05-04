@@ -13,7 +13,7 @@ use crate::db;
 #[post("/views/<display_id>/<video_id>/<order_id>")]
 pub fn register_view(display_id: i32, video_id: i32, order_id: String) -> Result<JsonValue, Option<status::BadRequest<JsonValue>>> {
     //TODO: The number of registered people in at the location should affect number of credits    
-    match video::register_video_view(display_id, video_id, order_id) {
+    match video::register_video_view(display_id, video_id, &order_id) {
         Err(None) => Err(None),
         Err(Some(_)) => Err(Some(status::BadRequest(Some(JsonValue(json!({"status": "error", "message": "could not be fullfilled, check video_id"})))))),
         Ok(_) => Ok(JsonValue(json!({"status": "success", "message": "video play logged"})))

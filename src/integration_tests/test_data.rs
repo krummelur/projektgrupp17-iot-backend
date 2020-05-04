@@ -37,13 +37,7 @@ url varchar(255) NOT NULL ,
 FOREIGN KEY (`interest`)
 REFERENCES interest(id),
  PRIMARY KEY( id));
-create table `played_video` (id integer NOT NULL UNIQUE AUTO_INCREMENT ,
-video integer NOT NULL ,
-time_epoch integer NOT NULL ,
-FOREIGN KEY (`video`)
-REFERENCES advertisement_video(id),
- PRIMARY KEY( id));
-create table `agency` (orgnr varchar(128) NOT NULL UNIQUE ,
+ create table `agency` (orgnr varchar(128) NOT NULL UNIQUE ,
 name varchar(128) NOT NULL UNIQUE ,
  PRIMARY KEY( orgnr));
 create table `users` (username varchar(128) NOT NULL UNIQUE ,
@@ -59,7 +53,16 @@ user varchar(128) NOT NULL ,
 FOREIGN KEY (`user`)
 REFERENCES users(username),
  PRIMARY KEY( id));
-create table `advertisement_order` (video integer NOT NULL ,
+ create table `played_video` (`id` integer NOT NULL UNIQUE AUTO_INCREMENT ,
+    `video` integer NOT NULL ,
+    `time_epoch` integer NOT NULL ,
+    `order` varchar(40) NOT NULL ,
+    FOREIGN KEY (`video`)
+    REFERENCES advertisement_video(`id`),
+    FOREIGN KEY (`order`)
+    REFERENCES orders(`id`),
+     PRIMARY KEY( `id`));
+ create table `advertisement_order` (video integer NOT NULL ,
 orders varchar(40) NOT NULL ,
 start_time_epoch integer NOT NULL ,
 end_time_epoch integer NOT NULL ,

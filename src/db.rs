@@ -93,6 +93,7 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
  * Gets the Display with the id display_id
  */
 pub fn get_display_by_id(display_id: i32) ->  Result<Option<Display>, String> {
+    println!("{}", display_id);
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from display where id = ?", (display_id,)) {
             Ok(Some((id, location))) => Ok(Some(Display{id, location})),
@@ -137,15 +138,24 @@ pub fn get_advertisement_video_by_id(video_id: i32) -> Result<Option<AdvertVideo
     }
 }
 
-pub fn insert_played_video(video_id: i32, time_epoch: u64) -> Result<(), String> {
-    match DB.lock().unwrap().get_conn().prep_exec("INSERT INTO played_video (video, time_epoch) values(?, ?)", (video_id, time_epoch)) {
+pub fn get_order_by_id(order_id: &String) -> Result<Option<Order>, String> {
+    match DB.lock().unwrap().get_conn().first_exec("SELECT id, credits, user
+    FROM orders where id = ?", (order_id,)) {
+        Ok(Some((id, credits, user))) => Ok(Some(Order{id, credits, user})),
+        Err(e) => e.print_err_get_mess(),
+        _ => Ok(None)
+    }
+}
+
+pub fn insert_played_video(video_id: i32, time_epoch: u64, order_id: &String) -> Result<(), String> {
+    match DB.lock().unwrap().get_conn().prep_exec("INSERT INTO played_video (video, time_epoch, `order`) values(?, ?, ?)", (video_id, time_epoch, order_id)) {
         Ok(_) => Ok(()),
         Err(e) => e.print_err_get_mess::<()>()
     }
 } 
 
-pub fn draw_credits_for_order_by_video(video_id: String, credits: i32) -> Result<(), String>{
-    match DB.lock().unwrap().get_conn().prep_exec("UPDATE orders set credits = credits - ? where id = ?", (credits, video_id)) {
+pub fn draw_credits_for_order(order_id: &String, credits: i32) -> Result<(), String>{
+    match DB.lock().unwrap().get_conn().prep_exec("UPDATE orders set credits = credits - ? where id = ?", (credits, order_id)) {
         Ok(_) => Ok(()),
         Err(e) => e.print_err_get_mess::<()>()
     }

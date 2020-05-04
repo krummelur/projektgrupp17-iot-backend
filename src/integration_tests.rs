@@ -11,6 +11,7 @@ lazy_static! { static ref CONN: Mutex<mysql::Pool> = Mutex::new(connect()) ;}
 
 
 fn connect() -> mysql::Pool {
+    is_test_or_panic();
     let environment = environment::db_environment_values();
     //Dont connect to aspecific database, it may not exist yet
     let url = format!("mysql://{}:{}@{}", environment.user, environment.pass, environment.host);
@@ -19,20 +20,25 @@ fn connect() -> mysql::Pool {
 
 fn guarded_client() -> rocket::local::Client {
 let ok_env = environment::get_current_env() == environment::TEST_STRING; 
-    if !ok_env {
-        colour::dark_red!("\n### TRYING TO RUN TESTS OUTSIDE TEST ENVIRONMENT ###\n\n");
-    }
-    //Never let integration tests run outside test environment!
+if !ok_env {
+    colour::dark_red!("\n### TRYING TO RUN TESTS OUTSIDE TEST ENVIRONMENT ###\n\n");
+}
+//Never let integration tests run outside test environment!
+is_test_or_panic();
+Client::new(rocket()).unwrap()
+}
+
+fn is_test_or_panic() {
+    let ok_env = environment::get_current_env() == environment::TEST_STRING; 
     assert!(ok_env, "Environment was not set to TEST during test");
-    Client::new(rocket()).unwrap()
 }
 
 /*Reset the database to an empty state*/
 fn reset_db() {
     CONN.lock()
     .unwrap().get_conn().unwrap().query(
-            format!(r#"{query}"#, query = test_data::CREATE_SQL_STMT)
-        ).map(|_| ()).expect("ERROR RESETTING DB")
+        format!(r#"{query}"#, query = test_data::CREATE_SQL_STMT)
+    ).map(|_| ()).expect("ERROR RESETTING DB")
 }
 
 fn query_db(query: &'static str) {
