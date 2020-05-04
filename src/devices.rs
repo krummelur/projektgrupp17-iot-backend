@@ -1,17 +1,32 @@
+/**
+ * Devices business logic
+ */
 use futures::join;
 use crate::db;
 use crate::model::*;
+use crate::devices::DeviceServiceError::{    
+    NoSuchTracker,
+    NoSuchReceiver,
+};
+    
+
+#[derive(Debug)]
+pub enum DeviceServiceError {
+    NoSuchTracker,
+    NoSuchReceiver
+}
+
 
 /// Registers new tracker location to database
-pub async fn ftr_register_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), &'static str> {
+pub async fn ftr_register_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), DeviceServiceError> {
     match join!(validate_receiver_id(receiver_id), validate_tracker_id(tracker_id)) {
         (Ok(_), Ok(_))  => 
             match db::register_tracker_to_receiver(receiver_id, tracker_id) {
             Ok(_) => Ok(()),
-            Err(e) => {println!("{}", e); panic!(e)}
+            Err(e) => {println!("{:?}", e); panic!(e)}
         },
-        (Err(err), _) | (_, Err(err)) => 
-            {println!("it went bad"); return Err(err)}
+        (Err(_), _) =>  return Err(NoSuchTracker),
+        (_, Err(_)) =>  return Err(NoSuchReceiver)
     }
 }
 

@@ -45,7 +45,7 @@ use super::RegisterBody;
          Ok(()) => 
              Some(status::Created(format!("/trackers/{}", station_id), 
              Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))))),
-         Err(e) => {println!("{}",e); None}
+         Err(e) => {println!("{:?}",e); None}
      }
  }
  
