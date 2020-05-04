@@ -291,7 +291,7 @@ fn correct_error_on_register_nonexistent_video() {
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
     assert_eq!(response.status(), Status::from_code(400).unwrap());
     assert_eq!(response_json["status"], String::from("error"));
-    assert_eq!(response_json["message"], String::from("could not be fullfilled, check video_id"));
+    assert_eq!(response_json["message"], String::from("no video with id 1 found"));
 }
 
 #[test]
