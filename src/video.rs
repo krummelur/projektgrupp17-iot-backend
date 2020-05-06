@@ -1,6 +1,7 @@
 /**
  * Video business logic layer
 */
+use rand::prelude::*;
 use crate::db;
 use crate::model::*;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -67,7 +68,7 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideoOrder>, 
     
     //Find all payed videos, where the interests match location interests
     //TODO: only match payed videos
-    let videos = match db::find_eligible_videos_by_interest(interests.iter().map(|x| x.0).collect()) {
+    let mut videos: Vec<AdvertVideoOrder> = match db::find_eligible_videos_by_interest(interests.iter().map(|x| x.0).collect()) {
         Ok(Some(val)) => val,
         Ok(None) => return Ok(None),
         Err(e) => {println!("{}", e); return Err(Other)}
@@ -76,6 +77,11 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideoOrder>, 
     //If the below line is used, the compiler should not allow it since it reuses a borrowed value, but it does, and seems to silently fail in the loop, after first iteration. 
     //Seems to be a bug in the compiler, or a bug in iter()
     //let mut video_iter = videos.iter();
+
+    //Shuffle the videos to return a random video from the highest rated interest that has a video.
+    println!("{:?}",videos);
+    videos.shuffle(&mut thread_rng());
+    println!("{:?}",videos);
     for x in interests.iter() {
         match videos.iter().find(|el| el.interest == x.0) {
             Some(val) => return Ok(Some(val.clone())),

@@ -22,8 +22,6 @@ pub struct StrCont {
     data: String,
 }
 
-
-
 #[derive(Deserialize)]
 pub struct LogMessage {
     error: bool,
@@ -41,7 +39,6 @@ impl FromDataSimple for StrCont {
         }
     }
 }
-
 
 /**
  * Gets the current API version / checks if api is alive
