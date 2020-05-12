@@ -1,4 +1,3 @@
-use rocket::response::status;
 use futures::executor::block_on;
 use rocket_contrib::json::{JsonValue, Json};
 use serde_json::json;
@@ -17,7 +16,7 @@ use super::RegisterBody;
  * }
  *  */
  #[post("/register", data = "<body>")]
- pub fn register_json(body: Json<RegisterBody>) -> Option<status::Created<JsonValue>> {
+ pub fn register_json(body: Json<RegisterBody>) -> Option<JsonValue> {
      register(body.loc.clone(), body.tag.clone())
  }
  
@@ -40,11 +39,10 @@ use super::RegisterBody;
   * Tracker and station must exist, if not 404 is returned
   */
  #[post("/register/<station_id>/<tracker_id>")]
- pub fn register(station_id: String, tracker_id: String) ->  Option<status::Created<JsonValue>> {
+ pub fn register(station_id: String, tracker_id: String) ->  Option<JsonValue> {
      match block_on(devices::ftr_register_tracker_location(&station_id, &tracker_id)) {
          Ok(()) => 
-             Some(status::Created(format!("/trackers/{}", station_id), 
-             Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))))),
+             Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))),
          Err(e) => {println!("{:?}",e); None}
      }
  }

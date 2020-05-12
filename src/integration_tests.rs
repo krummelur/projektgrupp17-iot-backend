@@ -95,7 +95,7 @@ fn register_and_get_tracker() {
     let client = guarded_client();
     
     let mut response = client.post("/register/1/1").dispatch();
-    assert_eq!(response.status(), Status::from_code(201).unwrap());
+    assert_eq!(response.status(), Status::from_code(200).unwrap());
 
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
     assert_eq!(response_json["status"], "registered", "Correct status on register");
