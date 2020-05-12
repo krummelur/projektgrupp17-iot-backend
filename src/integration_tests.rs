@@ -196,8 +196,7 @@ fn get_video_for_with_trackers_when_trackers_move_around() {
     
     let client = guarded_client();
     client.post("/register/receiver1/tracker1").dispatch();
-    /*
-    client.post("/register/1/2").dispatch();
+    client.post("/register/receiver1/tracker2").dispatch();
     
     let mut response = client.get("/video/1").dispatch();
     assert_eq!(response.status(), Status::from_code(200).unwrap());
@@ -205,15 +204,14 @@ fn get_video_for_with_trackers_when_trackers_move_around() {
     assert_eq!(response_json["video"]["url"], String::from("https://www.youtube.com/watch?v=oHg5SJYRHA0"));
     assert_eq!(response_json["video"]["length"], 120);
     assert_eq!(response_json["message"], Value::String(String::from("video found")));
-    client.post("/register/2/1").dispatch();
+    client.post("/register/receiver2/tracker1").dispatch();
     let mut response = client.get("/video/1").dispatch();
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
     assert_eq!(response_json["video"]["url"], String::from("interest2_video"));
     assert_eq!(response_json["video"]["length"], 10);
     assert_eq!(response_json["message"], Value::String(String::from("video found")));
-    */
 }
-/*
+
 #[test]
 fn when_getting_videos_orders_with_no_credit_are_not_given() {
     reset_db();
@@ -226,16 +224,16 @@ fn when_getting_videos_orders_with_no_credit_are_not_given() {
     query_db("insert into rfid_tracker (id) values(2);");
     query_db("insert into rfid_receiver (id, location) values(1, 1);");
     query_db("insert into rfid_receiver (id, location) values(2, 2);");
-    query_db("insert into tracker_interest (tracker, interest, weight) values(1, 1, 100);");
-    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 1, 10);");
-    query_db("insert into tracker_interest (tracker, interest, weight) values(2, 2, 90);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values('1', 1, 100);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values('2', 1, 10);");
+    query_db("insert into tracker_interest (tracker, interest, weight) values('2', 2, 90);");
     query_db("insert into advertisement_video (url, length_sec, interest) values('https://www.youtube.com/watch?v=oHg5SJYRHA0', 120, 1);");
     query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
     query_db("insert into agency (orgnr, name) values(1, \"agency1\");");
     query_db("insert into users (username, email, pass_hash, agency) values(\"user1\",  \"email@example.com\", \"HASH\",1);");
-    query_db("insert into orders (id, credits, user) values(\"1\", 0, \"user1\");");
+    query_db("insert into orders (id, credits, user) values(\"1\", 0, \"email@example.com\");");
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, 1,0, 1);");
-    query_db("insert into orders (id, credits, user) values(\"2\", 20, \"user1\");");
+    query_db("insert into orders (id, credits, user) values(\"2\", 20, \"email@example.com\");");
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(2, 2,0, 1);");
 
     let client = guarded_client();
@@ -249,7 +247,6 @@ fn when_getting_videos_orders_with_no_credit_are_not_given() {
     assert_eq!(response_json["video"]["length"], 10);
     assert_eq!(response_json["message"], Value::String(String::from("video found")));
 }
-
 
 #[test]
 fn when_video_played_order_credits_are_withdrawn() {
@@ -270,7 +267,7 @@ fn when_video_played_order_credits_are_withdrawn() {
     query_db("insert into advertisement_video (url, length_sec, interest) values('interest2_video', 10, 2);");
     query_db("insert into agency (orgnr, name) values(1, \"agency1\");");
     query_db("insert into users (username, email, pass_hash, agency) values(\"user1\",  \"email@example.com\", \"HASH\",1);");
-    query_db("insert into orders (id, credits, user) values(\"1\", 100, \"user1\");");
+    query_db("insert into orders (id, credits, user) values(\"1\", 100, \"email@example.com\");");
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, '1',0, 1);");
     
     let client = guarded_client();
@@ -284,7 +281,6 @@ fn when_video_played_order_credits_are_withdrawn() {
     assert_eq!(sql_res, 96);
 }
 
-
 #[test]
 fn correct_error_on_register_nonexistent_video() {
     reset_db();
@@ -295,6 +291,9 @@ fn correct_error_on_register_nonexistent_video() {
     assert_eq!(response_json["status"], String::from("error"));
     assert_eq!(response_json["message"], String::from("no video with id 1 found"));
 }
+
+
+
 
 #[test]
 fn get_with_invalid_input_should_not_sql_error() {
@@ -314,4 +313,3 @@ fn get_with_invalid_input_should_not_sql_error() {
     let response = client.post("/trackers/1/%5C%22%27%60r%60%27").dispatch();
     assert_eq!(response.status(), Status::from_code(404).unwrap());
 }
-*/
