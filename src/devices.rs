@@ -70,8 +70,8 @@ pub async fn validate_receiver_id(station_id: &String) -> Result<(), &'static st
  */
 pub async fn validate_tracker_id(tracker_id: &String) -> Result<(), &'static str>{
     match db::tracker_exists(tracker_id) {
-        Ok(Some(_)) => Ok(()),
-        Ok(None) => Err("No such tracker exists"),
+        Ok(Some(_)) => return Ok(()),
+        Ok(None) => return Err("No such tracker exists"),
         Err(e) => {println!("{}",e); Err("Unknown Error when accessing database")}
     }
 }

@@ -66,7 +66,6 @@ use super::RegisterBody;
  */
 #[get("/trackers/<tracker_id>")]
 pub fn get_tracker(tracker_id: String) ->  Option<Result<JsonValue, &'static str>> {
-    println!("{}", tracker_id);
     match db::get_tracker_by_id(&tracker_id) {
         Ok(Some(tr)) => 
         Some(Ok(JsonValue(json!({"id": tr.id, "location": tr.location})))),

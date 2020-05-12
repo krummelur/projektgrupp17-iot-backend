@@ -93,7 +93,6 @@ pub fn get_display_location(display_id: i32) -> Option<i32> {
  * Gets the Display with the id display_id
  */
 pub fn get_display_by_id(display_id: i32) ->  Result<Option<Display>, String> {
-    println!("{}", display_id);
     match DB.lock().unwrap().get_conn().first_exec(
         "select id, location from display where id = ?", (display_id,)) {
             Ok(Some((id, location))) => Ok(Some(Display{id, location})),
@@ -195,7 +194,7 @@ pub fn find_eligible_videos_by_interest(interests: Vec<i32>) ->  Result<Option<V
 /**
  * Returns an Option for the tracker with id tr_id 
  */
-pub fn tracker_exists(tr_id: &String) -> mysql::Result<Option<i32>> {
+pub fn tracker_exists(tr_id: &String) -> mysql::Result<Option<String>> {
     DB.lock().unwrap().get_conn().first_exec(
     "select id from rfid_tracker where id = ?", (tr_id,))
 }
