@@ -15,8 +15,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
-    - name: Run tests
+    - name: Run unit tests
       run: cargo test --tests unittest
+      - name: Run integration tests
       run: cargo test --tests integrationtest -- --test-threads=1
     env:
       RUST_IOT_ENVIRONMENT: TEST
