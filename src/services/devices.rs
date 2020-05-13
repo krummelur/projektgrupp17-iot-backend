@@ -8,6 +8,7 @@ use crate::services::DeviceServiceError;
 use crate::services::DeviceServiceError::{
     NoSuchTracker,
     NoSuchReceiver,
+    Other
 };
 
 /**
@@ -28,7 +29,7 @@ pub async fn ftr_register_tracker_location(receiver_id: &String, tracker_id: &St
 /**
  * Unregisters a tracker from a location, only if it currently registered to this location. 
  */
-pub async fn ftr_unregister_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), &'static str> {
+pub async fn ftr_unregister_tracker_location(receiver_id: &String, tracker_id: &String) -> Result<(), DeviceServiceError> {
     match join!(validate_receiver_id(receiver_id), validate_tracker_id(tracker_id)) {
         (Ok(_), Ok(_))  => {
             let tracker_loc = match db::get_tracker_by_id(tracker_id).unwrap().unwrap().location {
@@ -38,14 +39,14 @@ pub async fn ftr_unregister_tracker_location(receiver_id: &String, tracker_id: &
             match db::get_receiver_by_id(receiver_id) {
                 Ok(Some(Receiver {id: _, location})) if (location == tracker_loc) => 
                 match db::unregister_tracker(tracker_id) {
-                    Err(e) => {eprintln!("{}", e); Err("Error unregistering tracker")},
+                    Err(e) => {eprintln!("{}", e); Err(Other)},
                     Ok(v) => Ok(v)
                 },
                 _ => Ok(())
             }
         },
-        (Err(err), _) | (_, Err(err)) => 
-            {println!("it went bad"); return Err(err)}
+        (Err(_), _) => Err(NoSuchReceiver),
+        (_, Err(_)) => Err(NoSuchTracker)
     }
 }
 

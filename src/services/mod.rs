@@ -7,7 +7,8 @@ pub mod videos;
 #[derive(Debug)]
 pub enum DeviceServiceError {
     NoSuchTracker,
-    NoSuchReceiver
+    NoSuchReceiver,
+    Other
 }
 
 

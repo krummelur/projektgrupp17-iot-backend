@@ -6,6 +6,11 @@ use rocket::get;
 use crate::persistance::db;
 use crate::services::devices;
 use super::RegisterBody;
+use crate::services::DeviceServiceError::{
+    NoSuchTracker,
+    NoSuchReceiver,
+    Other
+};
 
 /**
  * Register a certain tracker to a certain location, using json data
@@ -15,48 +20,49 @@ use super::RegisterBody;
  *  tag: id
  * }
  *  */
- #[post("/register", data = "<body>")]
- pub fn register_json(body: Json<RegisterBody>) -> Option<JsonValue> {
-     register(body.loc.clone(), body.tag.clone())
- }
- 
- /**
- * unregister a certain tracker to a certain location, using json data
- * body: 
- * {
- *  loc: id, 
- *  tag: id
- * }
- *  */
- #[post("/unregister", data = "<body>")]
- pub fn unregister_json(body: Json<RegisterBody>) -> Option<JsonValue> {
-     unregister(body.loc.clone(), body.tag.clone())
- }
- 
- /**
-  * Register a certain tracker for a certain station
-  * Tracker and station must exist, if not 404 is returned
-  */
- #[post("/register/<station_id>/<tracker_id>")]
- pub fn register(station_id: String, tracker_id: String) ->  Option<JsonValue> {
-     match block_on(devices::ftr_register_tracker_location(&station_id, &tracker_id)) {
-         Ok(()) => 
-             Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))),
-         Err(e) => {println!("{:?}",e); None}
-     }
- }
- 
- /**
-  * Unregisters a certain tracker from a certain receiver. If the tracker is not registered to this receiver, nothing happens
-  * but a 200 is returned. 
-  */
- #[post("/unregister/<station_id>/<tracker_id>")]
- pub fn unregister(station_id: String, tracker_id: String) -> Option<JsonValue> {
-     match block_on(devices::ftr_unregister_tracker_location(&station_id, &tracker_id)) {
-         Ok(_) =>  Some(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id}))),
-         Err(e) => {println!("{}",e); None}
-     }
- }
+#[post("/register", data = "<body>")]
+pub fn register_json(body: Json<RegisterBody>) -> Option<JsonValue> {
+    register(body.loc.clone(), body.tag.clone())
+}
+
+/**
+* unregister a certain tracker to a certain location, using json data
+* body: 
+* {
+*  loc: id, 
+*  tag: id
+* }
+*  */
+#[post("/unregister", data = "<body>")]
+pub fn unregister_json(body: Json<RegisterBody>) -> Result<JsonValue, Option<JsonValue>> {
+    unregister(body.loc.clone(), body.tag.clone())
+}
+
+/**
+ * Register a certain tracker for a certain station
+ * Tracker and station must exist, if not 404 is returned
+ */
+#[post("/register/<station_id>/<tracker_id>")]
+pub fn register(station_id: String, tracker_id: String) ->  Option<JsonValue> {
+    match block_on(devices::ftr_register_tracker_location(&station_id, &tracker_id)) {
+        Ok(()) => 
+            Some(JsonValue(json!({"status": "registered", "tracker_id": tracker_id}))),
+        Err(e) => {println!("{:?}",e); None}
+    }
+}
+
+/**
+ * Unregisters a certain tracker from a certain receiver. If the tracker is not registered to this receiver, nothing happens
+ * but a 200 is returned. 
+ */
+#[post("/unregister/<station_id>/<tracker_id>")]
+pub fn unregister(station_id: String, tracker_id: String) -> Result<JsonValue, Option<JsonValue>> {
+    match block_on(devices::ftr_unregister_tracker_location(&station_id, &tracker_id)) {
+        Ok(_) =>  Ok(JsonValue(json!({"status": "unregistered", "tracker_id": tracker_id}))),
+        Err(NoSuchReceiver) | Err(NoSuchTracker) => Err(None),
+        Err(Other) => Err(Some(JsonValue(json!({"status": "error", "message": "unknown error performing the request"}))))
+    }
+}
 
  /**
  * Find out what receiver if any a tracker is registered at.
