@@ -280,7 +280,7 @@ fn when_video_played_order_credits_are_withdrawn() {
     assert_eq!(response_json["message"], String::from("video play logged"));
     
     let sql_res: i32 = CONN.lock().unwrap().get_conn().unwrap().first("select credits from orders where id = '1'").unwrap().unwrap();
-    assert_eq!(sql_res, 97);
+    assert_eq!(sql_res, 88);
 }
 
 #[test]

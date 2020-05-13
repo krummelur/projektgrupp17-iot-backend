@@ -35,7 +35,7 @@ pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String, le
         _ => return Err(Other)
     };
     
-    let credits_amt = std::cmp::max(length_sec/30, 1);
+    let credits_amt = std::cmp::max(length_sec/8, 1);
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) =>    match (db::insert_played_video(video_id, n.as_secs(), order_id), db::draw_credits_for_order(order_id, credits_amt)) {
                         (Ok(_), Ok(_)) => Ok(()),
