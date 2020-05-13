@@ -24,10 +24,10 @@ pub enum VideoServiceError {
 /**
  *  Registers a view in played_videos 
  */
-pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String) ->  Result<(), VideoServiceError> {
+pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String, length_sec: i32) ->  Result<(), VideoServiceError> {
     //TODO make db-intreaction transactonal since one update could fail.
 
-    let video_data: AdvertVideo = match (db::get_advertisement_video_by_id(video_id), db::get_display_by_id(display_id), db::get_order_by_id(order_id)) {
+    match (db::get_advertisement_video_by_id(video_id), db::get_display_by_id(display_id), db::get_order_by_id(order_id)) {
         (Ok(None), _, _) => return Err(NoSuchVideo),
         (Ok(Some(_)), Ok(None), _) => return Err(NoSuchDisplay),
         (Ok(Some(_)), Ok(Some(_)), Ok(None)) => return Err(NoSuchOrder),
@@ -35,7 +35,7 @@ pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String) ->
         _ => return Err(Other)
     };
     
-    let credits_amt = std::cmp::max(video_data.length_sec/30, 1);
+    let credits_amt = std::cmp::max(length_sec/30, 1);
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) =>    match (db::insert_played_video(video_id, n.as_secs(), order_id), db::draw_credits_for_order(order_id, credits_amt)) {
                         (Ok(_), Ok(_)) => Ok(()),

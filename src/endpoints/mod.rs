@@ -12,6 +12,11 @@ use std::io;
 use std::io::Read;
 
 #[derive(Deserialize)]
+pub struct VideoBody {
+    length_sec: i32
+}
+
+#[derive(Deserialize)]
 pub struct RegisterBody {
     loc: String,
     tag: String

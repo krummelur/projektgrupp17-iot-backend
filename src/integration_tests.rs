@@ -271,21 +271,25 @@ fn when_video_played_order_credits_are_withdrawn() {
     query_db("insert into advertisement_order (video, orders, start_time_epoch, end_time_epoch) values(1, '1',0, 1);");
     
     let client = guarded_client();
-    let mut response = client.post("/views/1/1/1").dispatch();
+    let mut response = client.post("/views/1/1/1")
+    .body("{ \"length_sec\": 100}")
+    .dispatch();
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
     assert_eq!(response.status(), Status::from_code(200).unwrap());
     assert_eq!(response_json["status"], String::from("success"));
     assert_eq!(response_json["message"], String::from("video play logged"));
     
     let sql_res: i32 = CONN.lock().unwrap().get_conn().unwrap().first("select credits from orders where id = '1'").unwrap().unwrap();
-    assert_eq!(sql_res, 96);
+    assert_eq!(sql_res, 97);
 }
 
 #[test]
 fn correct_error_on_register_nonexistent_video() {
     reset_db();
     let client = guarded_client();
-    let mut response = client.post("/views/1/1/1").dispatch();
+    let mut response = client.post("/views/1/1/1")
+    .body("{ \"length_sec\": 10}")
+    .dispatch();
     let response_json: Value = serde_json::from_str(response.body_string().unwrap().as_str()).unwrap();
     assert_eq!(response.status(), Status::from_code(400).unwrap());
     assert_eq!(response_json["status"], String::from("error"));
