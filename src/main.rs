@@ -8,11 +8,10 @@
 mod integration_tests;
 extern crate futures;
 
-mod db;
+mod persistance;
 mod environment;
 mod model;
-mod video;
-mod devices;
+mod services;
 mod endpoints;
 
 use rocket::http::Method;
@@ -52,13 +51,13 @@ fn rocket() -> rocket::Rocket {
     .mount("/", routes![
         endpoints::default, 
         endpoints::log_message,
-        endpoints::iot_devices::register, 
-        endpoints::iot_devices::register_json, 
-        endpoints::iot_devices::get_tracker, 
-        endpoints::iot_devices::unregister, 
-        endpoints::iot_devices::unregister_json, 
-        endpoints::videos::register_view,
-        endpoints::videos::get_video]) 
+        endpoints::devices_endpoints::register, 
+        endpoints::devices_endpoints::register_json, 
+        endpoints::devices_endpoints::get_tracker, 
+        endpoints::devices_endpoints::unregister, 
+        endpoints::devices_endpoints::unregister_json, 
+        endpoints::videos_endpoints::register_view,
+        endpoints::videos_endpoints::get_video]) 
     .register( catchers![
         endpoints::catchers::not_found, 
         endpoints::catchers::bad_request, 

@@ -13,7 +13,6 @@ pub struct Order {
     pub user: String
 }
 
-
 #[derive(Debug, Clone)]
 pub struct AdvertVideoOrder {
     pub video_id: i32,

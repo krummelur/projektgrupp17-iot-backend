@@ -5,31 +5,23 @@
 use mocktopus::macros::*;
 
 use rand::prelude::*;
-use crate::db;
+use crate::persistance::db;
 use crate::model::*;
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::video::VideoServiceError::{    
+use crate::services::VideoServiceError;
+use crate::services::VideoServiceError::{    
     NoSuchVideo,
     NoSuchDisplay,
     NoSuchOrder,
     NoSuchDisplayLocation,
-    Other};
-    
-#[derive(Debug)]
-pub enum VideoServiceError {
-    NoSuchVideo,
-    NoSuchDisplay,
-    NoSuchOrder,
-    NoSuchDisplayLocation,
-    Other,
-}
+    Other
+};
 
 /**
  *  Registers a view in played_videos 
  */
 #[cfg_attr(test, mockable)]
 pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String, length_sec: i32) ->  Result<(), VideoServiceError> {
-    //TODO make db-intreaction transactonal since one update could fail.
 
     match (db::get_advertisement_video_by_id(video_id), db::get_display_by_id(display_id), db::get_order_by_id(order_id)) {
         (Ok(None), _, _) => return Err(NoSuchVideo),
@@ -93,9 +85,9 @@ pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideoOrder>, 
 }
 
 
-/**
- * Unit tests
- */
+/**************
+ * Unit tests *
+ **************/
 #[cfg(test)]
 mod tests {
     use mocktopus::mocking::*;

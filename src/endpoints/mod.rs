@@ -1,6 +1,9 @@
+/**
+ * This module contains the public facing interface.
+ */
 pub mod catchers;
-pub mod iot_devices;
-pub mod videos;
+pub mod devices_endpoints;
+pub mod videos_endpoints;
 
 use serde::Deserialize;
 use rocket_contrib::json::{JsonValue};

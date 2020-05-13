@@ -3,8 +3,8 @@ use rocket_contrib::json::{JsonValue, Json};
 use serde_json::json;
 use rocket::get;
 
-use crate::db;
-use crate::devices;
+use crate::persistance::db;
+use crate::services::devices;
 use super::RegisterBody;
 
 /**
@@ -32,7 +32,6 @@ use super::RegisterBody;
  pub fn unregister_json(body: Json<RegisterBody>) -> Option<JsonValue> {
      unregister(body.loc.clone(), body.tag.clone())
  }
- 
  
  /**
   * Register a certain tracker for a certain station

@@ -1,8 +1,13 @@
 /**
- * In rust, integration tests are put into the tests directory.
+ * ***************************
+ * * Integration tests tests *
+ * ***************************
+ * 
+ * 
+ * In rust, integration tests are different from unit tests.
  * Unit tests are written in the file that they are testing.
  * 
- * Tests all public facing endpoints
+ * This file test all public facing endpoints
  * of the api, what is tested is based on:
  * sisense.com/blog/rest-api-testing-strategy-what-exactly-should-you-test
  *
@@ -17,7 +22,9 @@
  * This gives a high level of certainty of correctness; aside from
  * validating the output of the functions, this test validates the side effects as well.
  * In this case, that means validating the database state after each test.
+ * 
  */
+
 use crate::environment;
 use super::rocket;
 mod test_data;
@@ -78,7 +85,11 @@ fn query_db(query: &'static str) {
         .expect(query);
 }
 
-/*TESTS*/
+
+
+/**************
+ * Unit tests *
+ **************/
 #[test]
 fn integrationtest_rocket_has_launched() {
     let client = guarded_client();
