@@ -3,10 +3,16 @@ static ENVIRONMENT_VAR:   &'static str = "RUST_IOT_ENVIRONMENT";
 pub static PRODUCTION_STRING: &'static str =  "PRODUCTION" ;
 pub static TEST_STRING:       &'static str =  "TEST";
 
+/**
+ * Get the current environment, PRODUCTION or TEST
+ */
 pub fn get_current_env() -> String {
     env::var(ENVIRONMENT_VAR).unwrap_or_else(|_| {println!("environment setting not found, using test environment"); return TEST_STRING.to_owned()})
 }
 
+/**
+ * Database connection constants.
+ */
 struct DbVars {
     host_var: &'static str,
     db_var: &'static str , 
@@ -33,6 +39,9 @@ impl DbVars {
     }
 }
 
+/**
+ * Database connection environment vars
+ */
 pub struct DbValues {
     pub host: String,
     pub db_name: String,
@@ -40,6 +49,9 @@ pub struct DbValues {
     pub pass: String
 }
 
+/**
+ * Returns the current database variables from the environment
+ */
 pub fn db_environment_values() -> DbValues {
     let cur_env_val = get_current_env();
     let is_production = String::from(PRODUCTION_STRING) == cur_env_val;

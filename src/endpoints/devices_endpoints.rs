@@ -12,35 +12,43 @@ use crate::services::DeviceServiceError::{
     Other
 };
 
+
 /**
- * Register a certain tracker to a certain location, using json data
- * body: 
- * {
- *  loc: id, 
- *  tag: id
- * }
- *  */
+* Registers a specified tracker from a specified receiver, granted both exist, where the arguments are given as request body.
+* 
+* Responds with:
+* - 200: if the tracker and receiver exist.
+* - 404: if either the receiver or tracker does not exist
+*
+* This is an API endpoint mapped to
+* - /register [POST]
+* 
+* # Arguments
+* * Post body (json):
+*
+* `{ loc: <receiver_id>, tag: <tracker_id> }`
+* 
+* 
+*  */
 #[post("/register", data = "<body>")]
 pub fn register_json(body: Json<RegisterBody>) -> Option<JsonValue> {
     register(body.loc.clone(), body.tag.clone())
 }
 
-/**
-* unregister a certain tracker to a certain location, using json data
-* body: 
-* {
-*  loc: id, 
-*  tag: id
-* }
-*  */
-#[post("/unregister", data = "<body>")]
-pub fn unregister_json(body: Json<RegisterBody>) -> Result<JsonValue, Option<JsonValue>> {
-    unregister(body.loc.clone(), body.tag.clone())
-}
 
 /**
- * Register a certain tracker for a certain station
- * Tracker and station must exist, if not 404 is returned
+ * Registers a specified tracker from a specified receiver, granted both exist.
+ * 
+ * Responds with:
+ * - 200: if the tracker and receiver exist.
+ * - 404: if either the receiver or tracker does not exist 
+ * 
+ * This is an API endpoint mapped to
+ * - /register/<station_id>/<tracker_id> [POST]
+ * 
+ * # Arguments
+ * * `station_id` - an identifier String of a receiver
+ * * `tracker_id` - an identifier String of a tracker
  */
 #[post("/register/<station_id>/<tracker_id>")]
 pub fn register(station_id: String, tracker_id: String) ->  Option<JsonValue> {
@@ -52,8 +60,41 @@ pub fn register(station_id: String, tracker_id: String) ->  Option<JsonValue> {
 }
 
 /**
- * Unregisters a certain tracker from a certain receiver. If the tracker is not registered to this receiver, nothing happens
- * but a 200 is returned. 
+*  Unregisters a specified tracker from a specified receiver. If the tracker is not currently registered to this receiver, this call will have no effect.
+* 
+* Responds with:
+* - 200: if the tracker and receiver exist.
+* - 404: if either the receiver or tracker does not exist
+*
+* This is an API endpoint mapped to
+* - /unregister [POST]
+* 
+* # Arguments
+* * Post body (json):
+*
+* `{ loc: <receiver_id>, tag: <tracker_id> }`
+* 
+* 
+*  */
+#[post("/unregister", data = "<body>")]
+pub fn unregister_json(body: Json<RegisterBody>) -> Result<JsonValue, Option<JsonValue>> {
+    unregister(body.loc.clone(), body.tag.clone())
+}
+
+
+/**
+ * Unregisters a specified tracker from a specified receiver. If the tracker is not currently registered to this receiver, this call will have no effect.
+ * 
+ * Responds with:
+ * - 200: if the tracker and receiver exist.
+ * - 404: if either the receiver or tracker does not exist 
+ * 
+ * This is an API endpoint mapped to
+ * - /unregister/<station_id>/<tracker_id> [POST]
+ * 
+ * # Arguments
+ * * `station_id` - an identifier String of a receiver
+ * * `tracker_id` - an identifier String of a tracker
  */
 #[post("/unregister/<station_id>/<tracker_id>")]
 pub fn unregister(station_id: String, tracker_id: String) -> Result<JsonValue, Option<JsonValue>> {
@@ -65,7 +106,17 @@ pub fn unregister(station_id: String, tracker_id: String) -> Result<JsonValue, O
 }
 
  /**
- * Find out what receiver if any a tracker is registered at.
+ * Responds with the receiver if any a tracker is registered at.
+ * 
+ * Responds with:
+ * - 200: if the tracker and the receiver exist
+ * - 404: if either the receiver or tracker does not exist 
+ * 
+ * This is an API endpoint mapped to
+ * - /trackers/<tracker_id> [GET]
+ * 
+ * # Arguments
+ * * `tracker_id` - an identifier String of a tracker
  */
 #[get("/trackers/<tracker_id>")]
 pub fn get_tracker(tracker_id: String) ->  Option<Result<JsonValue, &'static str>> {
