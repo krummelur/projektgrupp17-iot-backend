@@ -95,7 +95,7 @@ mod tests {
     use crate::model::{ Display, AdvertVideoOrder };
 
     #[test]
-    fn register_video_view_for_nonexistent_video() {
+    fn register_video_view_for_nonexistent_video_unittest() {
         db::Dbconn::new.mock_safe(|| panic!("TRIED TO CONNECT TO DB"));
 
         db::get_advertisement_video_by_id.mock_safe(|param| {

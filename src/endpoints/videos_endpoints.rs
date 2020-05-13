@@ -85,7 +85,7 @@ mod tests {
     use crate::model::{ Display, AdvertVideoOrder };
 
     #[test]
-    fn get_video_for_nonexistent_display_gives_404() {
+    fn get_video_for_nonexistent_display_gives_404_unittest() {
         db::Dbconn::new.mock_safe(|| panic!(""));
 
         db::get_display_by_id.mock_safe(|param| {
