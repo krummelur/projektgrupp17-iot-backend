@@ -4,7 +4,8 @@
  * Magnus Fredriksson
  */
 #[macro_use] extern crate rocket;
-#[cfg(test)] mod integration_tests;
+#[cfg(test)]
+mod integration_tests;
 extern crate futures;
 
 mod db;

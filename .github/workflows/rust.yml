@@ -3,6 +3,8 @@ name: Rust
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -14,7 +16,8 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose -- --test-threads=1
+      run: cargo test --tests unittest
+      run: cargo test --tests integrationtest -- --test-threads=1
     env:
       RUST_IOT_ENVIRONMENT: TEST
       SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
