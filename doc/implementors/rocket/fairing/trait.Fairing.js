@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["proj17_iot_server"] = [{"text":"impl <a class=\"trait\" href=\"https://api.rocket.rs/v0.4/rocket/fairing/trait.Fairing.html\" title=\"trait rocket::fairing::Fairing\">Fairing</a> for <a class=\"struct\" href=\"proj17_iot_server/struct.ResponsePostProcessor.html\" title=\"struct proj17_iot_server::ResponsePostProcessor\">ResponsePostProcessor</a>","synthetic":false,"types":["proj17_iot_server::ResponsePostProcessor"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

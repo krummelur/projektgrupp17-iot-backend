@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["db_environment_values","Returns the current database variables from the environment"],["get_current_env","Get the current environment, PRODUCTION or TEST"]],"static":[["ENVIRONMENT_VAR",""],["PRODUCTION_STRING",""],["TEST_STRING",""]],"struct":[["DbValues","Database connection environment vars"],["DbVars","Database connection constants."]]});

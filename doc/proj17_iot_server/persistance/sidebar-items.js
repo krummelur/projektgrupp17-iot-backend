@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["db","Handles app MySql integation"]]});

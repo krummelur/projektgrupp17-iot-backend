@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["proj17_iot_server"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"struct\" href=\"proj17_iot_server/model/struct.Display.html\" title=\"struct proj17_iot_server::model::Display\">Display</a>","synthetic":false,"types":["proj17_iot_server::model::Display"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
