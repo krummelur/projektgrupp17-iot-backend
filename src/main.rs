@@ -25,7 +25,7 @@ mod model;
  */
 mod services;
 /**
- * App public facins API endpoints
+ * App public facing API endpoints
  */
 mod endpoints;
 
