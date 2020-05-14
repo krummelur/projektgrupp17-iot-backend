@@ -11,8 +11,26 @@ use crate::services::VideoServiceError::{
 };
 
 /**
- * Registers a view of a specified video_id from a specific display_id
- */
+* Registers a video view, granted the display_id, video_id, order_id, all exist.
+* If all arguments are valid, a new played_advertisement row will be created in the database, and credits removed from the order_id.
+* 1 credit will be withdrawn for each 8 seconds played.
+* 
+* Responds with:
+* - 200: if the tracker and receiver exist.
+* - 404: if either the receiver or tracker does not exist
+*
+* This is an API endpoint mapped to
+* - /views/<display_id>/<video_id>/<order_id> [POST]
+* 
+* # Arguments
+* ## url parameters:
+* - `display_id` - the id of the display that played the video
+* - `video_id` - the id of the played video 
+* - `order_id` - the id of the order that ordered the video
+* ## Post body (json):
+*
+* `{ length_sec: <integer_length_of_played_video>  }`
+*  */
 #[post("/views/<display_id>/<video_id>/<order_id>", data = "<body>")]
 pub fn register_view( display_id: i32, video_id: i32, order_id: String, body: Json<VideoBody>) -> Result<JsonValue, status::BadRequest<JsonValue>> {
     //TODO: The number of registered people in at the location should affect number of credits
@@ -38,16 +56,48 @@ pub fn register_view( display_id: i32, video_id: i32, order_id: String, body: Js
     }
 }
 
+/**
+ * Utility function
+ */
 fn bad_request_builder(message: String) -> status::BadRequest<JsonValue> {
     status::BadRequest(Some(JsonValue(
         json!({"status":"error", "message": format!("{}", message)}),
     )))
 }
 
+
 /**
- * Get the most appropriate video to play on the screen of specified id
- * Appropriateness depends on the trackers currently registered to the reciver, and their interests
- */
+* Get the most appropriate video to play on the screen of specified id
+* Appropriateness depends on the trackers currently registered to the reciver, and their interests
+* 
+* Appropriateness is calculated as follows:
+*
+* 1: Get all the videos that match the interest(s) present at the display location.
+*
+* 2: Filter the results based on which videos have credits left to use
+*
+* 3: Find the highest weighted interest in the filtered results
+*
+* 4: Filter away the videos which have other interest
+*
+* 5: Shuffle the results and return the first video in the shuffled list 
+* 
+* Responds with:
+* ### 200: if the tracker and receiver exist.
+* Response body:
+*
+* `{message: "video found", video :{"length": <video_length_seconds>, order: <associated_order>, url :<video_url>, <videoId>: <video_identifier>}}`
+* 
+* ### 404: if the display does not exist
+*
+*
+* This is an API endpoint mapped to
+* - /video/<display_id> [GET]
+* 
+* # Arguments
+* ## url parameters:
+* - `display_id` - the id of the display to get video for.
+*  */
 #[get("/video/<display_id>")]
 pub fn get_video(display_id: i32) -> Result<JsonValue, Option<status::BadRequest<JsonValue>>> {
     match db::get_display_by_id(display_id) {

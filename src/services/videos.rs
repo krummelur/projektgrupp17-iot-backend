@@ -18,7 +18,7 @@ use crate::services::VideoServiceError::{
 };
 
 /**
- *  Registers a view in played_videos 
+ *  Registers a view in played_videos see public endpoint doc
  */
 #[cfg_attr(test, mockable)]
 pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String, length_sec: i32) ->  Result<(), VideoServiceError> {
@@ -42,12 +42,24 @@ pub fn register_video_view(display_id: i32, video_id: i32, order_id: &String, le
 }
 
 /**
- * Returns an Optional AdvertVideo for the most relevant video, None if there is no payed for video that matches the interests at the location
- * The video returned will be a random video for which
- * - it is payed
- * - its interest is the highest weighted at the location
- * holds
- */
+* Returns an Optional AdvertVideo for the most relevant video, None if there is no payed for video that matches the interests at the location
+* 
+* The video returned will be a random video for which the following
+*
+* The video matches the highest weighted interest for which there is a payed video.
+*
+* holds
+*
+* # Return values:
+* [AdvertVideoOrder](../../model/Struct.AdvertVideoOrder.html) if a video matches
+* 
+* None if display exists but there are no matching videos
+*
+* [VideoServiceError::NoSuchDisplay](../enum.VideoServiceError.html) if display does not exist
+*
+* # Arguments
+* `display_id` - an i32 representing a display id.
+*/
 #[cfg_attr(test, mockable)]
 pub fn find_relevant_video(display_id: i32) -> Result<Option<AdvertVideoOrder>, VideoServiceError> {
     //Find out where the display is located

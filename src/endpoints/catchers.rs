@@ -1,6 +1,9 @@
 use rocket_contrib::json::JsonValue;
 use serde_json::json;
 
+/**
+ * 404 override
+ */
 #[catch(404)]
 pub fn not_found() -> JsonValue {
     JsonValue(json!({
@@ -9,6 +12,9 @@ pub fn not_found() -> JsonValue {
     }))
 }
 
+/**
+ * 400 orverride
+ */
 #[catch(400)]
 pub fn bad_request() -> JsonValue {
     JsonValue(json!({
@@ -17,6 +23,9 @@ pub fn bad_request() -> JsonValue {
     }))
 }
 
+/**
+ * 422 override
+ */
 #[catch(422)]
 pub fn unproc_request() -> JsonValue {
     JsonValue(json!({

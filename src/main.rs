@@ -8,10 +8,25 @@
 mod integration_tests;
 extern crate futures;
 
+/**
+ * Persistence layer
+ */
 mod persistance;
+/**
+ * App configuration
+ */
 mod environment;
+/**
+ * App model, database / request to struct mapping
+ */
 mod model;
+/**
+ * App business logic
+ */
 mod services;
+/**
+ * App public facins API endpoints
+ */
 mod endpoints;
 
 use rocket::http::Method;
@@ -28,7 +43,6 @@ fn main() {
     check_env();
     rocket().launch();
 }
-
 
 #[derive(Default)]
 struct ResponsePostProcessor {}

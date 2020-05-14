@@ -4,6 +4,9 @@ Implemented in rust with rocket
 
 ![Rust](https://github.com/krummelur/projektgrupp17-iot-backend/workflows/Rust/badge.svg?branch=master&event=push)
 
+# Docs
+### [Full documentation here](https://krummelur.github.io/projektgrupp17-iot-backend/doc/proj17_iot_server/index.html)
+
 # Build
 * switch to nightly "rustup override set nightly"
 * cargo run|build to run or build 

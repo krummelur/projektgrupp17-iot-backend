@@ -1,7 +1,10 @@
 /**
- * This module contains the business logic layer of the application
+ * Rfid device business logic
  */
 pub mod devices;
+/**
+ * Videos business logic
+ */
 pub mod videos;
 
 #[derive(Debug)]
