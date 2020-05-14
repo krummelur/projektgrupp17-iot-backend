@@ -18,40 +18,7 @@ cargo test --tests unittest
 cargo test --tests integrationtest -- --test-threads=1
 
 ## endpoints
-* /register/receiver_id/tag_id [POST]
-
-* /register [POST]
-```
-{
-loc: <receiver_id>,
-tag: <rfid_tag_id>
-}
-```
-
-registers that a specific device has been seen by a transceiver station, both the device and the station must exist.
-
-* /trackers/tracker_id [GET]
-
-Gets info about a specified tracker 
-
-* /unregister/receiver_id/tracker_id [POST]
-* /unregister [POST]
-
-Unregisters a specific tracke from a specific receiver
-
-* /videos/<display_id> [GET]
-
-Gets the most relevant video for a specific display
-
-* /views/<display_id>/<video_id>/<order_id>
-```
-{
-length_seconds: <video_time_in_seconds>
-}
-```
-
-Registers a video view. The video view is persisted in database, and credit are deducted from the order
-
+See [documentation](https://krummelur.github.io/projektgrupp17-iot-backend/doc/proj17_iot_server/index.html)
 
 ## Environment
 * RUST_IOT_ENVIRONMENT: PRODUCTION|TEST 
